@@ -27,7 +27,7 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 TIME_ZONE = "Asia/Tashkent"
 # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
 LANGUAGE_CODE = "en-us"
-https://docs.djangoproject.com/en/dev/ref/settings/#languages
+# https://docs.djangoproject.com/en/dev/ref/settings/#languages
 from django.utils.translation import gettext_lazy as _
 LANGUAGES = [
     ('uz', _('Uzbek')),
