@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework.routers import SimpleRouter
 
@@ -10,4 +11,6 @@ router.register("users", UserViewSet)
 
 
 app_name = "api"
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+    path("products/", include("products.api.urls")),
+]

@@ -21,6 +21,8 @@ urlpatterns = [
     # User management
     path("users/", include("acham.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
+    # Products
+    path("products/", include("products.urls", namespace="products")),
     # Your stuff: custom urls includes go here
     # ...
     # Media files
