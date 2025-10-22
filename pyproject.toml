@@ -189,4 +189,5 @@ dependencies = [
     "redis==6.4.0",
     "sentry-sdk==2.39.0",
     "whitenoise==6.11.0",
+    "django-debug-toolbar>=6.0.0",
 ]
