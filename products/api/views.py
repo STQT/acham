@@ -1,22 +1,27 @@
 from rest_framework import generics, filters, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Q
 
-from ..models import Product, ProductShot
+from ..models import Product, ProductShot, Collection, Banner
 from .serializers import (
     ProductSerializer,
     ProductListSerializer,
-    ProductCreateUpdateSerializer,
-    ProductShotSerializer
+    ProductShotSerializer,
+    CollectionSerializer,
+    BannerSerializer,
+    ChoiceItemSerializer,
+    ProductCompleteDetailsSerializer
 )
 
 
-class ProductListCreateView(generics.ListCreateAPIView):
+class ProductListView(generics.ListAPIView):
     """
-    List all products or create a new product.
+    List all products.
     """
     queryset = Product.objects.all()
+    serializer_class = ProductListSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'material', 'color', 'short_description']
     ordering_fields = ['name', 'price', 'created_at', 'updated_at']
@@ -52,28 +57,19 @@ class ProductListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(is_available=is_available.lower() == 'true')
         
         return queryset
-    
-    def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return ProductCreateUpdateSerializer
-        return ProductListSerializer
 
 
-class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
+class ProductDetailView(generics.RetrieveAPIView):
     """
-    Retrieve, update or delete a product.
+    Retrieve a product.
     """
     queryset = Product.objects.all()
-    
-    def get_serializer_class(self):
-        if self.request.method in ['PUT', 'PATCH']:
-            return ProductCreateUpdateSerializer
-        return ProductSerializer
+    serializer_class = ProductSerializer
 
 
-class ProductShotListCreateView(generics.ListCreateAPIView):
+class ProductShotListView(generics.ListAPIView):
     """
-    List all shots for a product or create a new shot.
+    List all shots for a product.
     """
     serializer_class = ProductShotSerializer
     filter_backends = [filters.OrderingFilter]
@@ -83,16 +79,11 @@ class ProductShotListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         product_id = self.kwargs['product_id']
         return ProductShot.objects.filter(product_id=product_id)
-    
-    def perform_create(self, serializer):
-        product_id = self.kwargs['product_id']
-        product = Product.objects.get(id=product_id)
-        serializer.save(product=product)
 
 
-class ProductShotDetailView(generics.RetrieveUpdateDestroyAPIView):
+class ProductShotDetailView(generics.RetrieveAPIView):
     """
-    Retrieve, update or delete a product shot.
+    Retrieve a product shot.
     """
     serializer_class = ProductShotSerializer
     
@@ -101,6 +92,22 @@ class ProductShotDetailView(generics.RetrieveUpdateDestroyAPIView):
         return ProductShot.objects.filter(product_id=product_id)
 
 
+@extend_schema(
+    operation_id='products_product_search',
+    tags=['products'],
+    summary='Advanced product search',
+    description='Search products with multiple filters including text, type, size, color, and price range.',
+    responses={200: ProductListSerializer(many=True)},
+    parameters=[
+        OpenApiParameter(name='q', description='Search query', required=False, type=str),
+        OpenApiParameter(name='type', description='Product type', required=False, type=str),
+        OpenApiParameter(name='size', description='Product size', required=False, type=str),
+        OpenApiParameter(name='color', description='Product color', required=False, type=str),
+        OpenApiParameter(name='min_price', description='Minimum price', required=False, type=float),
+        OpenApiParameter(name='max_price', description='Maximum price', required=False, type=float),
+        OpenApiParameter(name='available_only', description='Show only available products', required=False, type=bool),
+    ]
+)
 @api_view(['GET'])
 def product_search(request):
     """
@@ -162,6 +169,13 @@ def product_search(request):
     return Response(serializer.data)
 
 
+@extend_schema(
+    operation_id='products_product_types',
+    tags=['products'],
+    summary='Get product types',
+    description='Get available product types and their choices.',
+    responses={200: ChoiceItemSerializer(many=True)}
+)
 @api_view(['GET'])
 def product_types(request):
     """
@@ -171,6 +185,13 @@ def product_types(request):
     return Response(types)
 
 
+@extend_schema(
+    operation_id='products_product_sizes',
+    tags=['products'],
+    summary='Get product sizes',
+    description='Get available product sizes and their choices.',
+    responses={200: ChoiceItemSerializer(many=True)}
+)
 @api_view(['GET'])
 def product_sizes(request):
     """
@@ -178,3 +199,117 @@ def product_sizes(request):
     """
     sizes = [{'value': choice[0], 'label': choice[1]} for choice in Product.ProductSize.choices]
     return Response(sizes)
+
+
+@extend_schema(
+    operation_id='products_product_complete_details',
+    tags=['products'],
+    summary='Get complete product details',
+    description='Get comprehensive product information including all shots, available types, sizes, and search options.',
+    responses={200: ProductCompleteDetailsSerializer}
+)
+@api_view(['GET'])
+def product_complete_details(request, pk):
+    """
+    Get complete product details including all related information.
+    """
+    try:
+        product = Product.objects.get(pk=pk)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Get product details
+    product_serializer = ProductSerializer(product, context={'request': request})
+    
+    # Get all shots for this product
+    shots = ProductShot.objects.filter(product=product).order_by('order', 'created_at')
+    shots_serializer = ProductShotSerializer(shots, many=True, context={'request': request})
+    
+    # Get available types and sizes
+    types = [{'value': choice[0], 'label': choice[1]} for choice in Product.ProductType.choices]
+    sizes = [{'value': choice[0], 'label': choice[1]} for choice in Product.ProductSize.choices]
+    
+    # Get all active collections
+    collections = Collection.objects.filter(is_active=True)
+    collections_serializer = CollectionSerializer(collections, many=True)
+    
+    # Build complete response
+    response_data = {
+        'product': product_serializer.data,
+        'shots': shots_serializer.data,
+        'metadata': {
+            'available_types': types,
+            'available_sizes': sizes,
+            'collections': collections_serializer.data,
+            'search_fields': ['name', 'material', 'color', 'short_description'],
+            'filter_options': {
+                'type': [choice[0] for choice in Product.ProductType.choices],
+                'size': [choice[0] for choice in Product.ProductSize.choices],
+                'availability': [True, False]
+            }
+        }
+    }
+    
+    return Response(response_data)
+
+
+@extend_schema(
+    operation_id='products_banner_list',
+    tags=['banners'],
+    summary='List banners',
+    description='Get all active banners for the homepage.',
+    responses={200: BannerSerializer(many=True)}
+)
+class BannerListView(generics.ListAPIView):
+    """
+    List all active banners.
+    """
+    queryset = Banner.objects.filter(is_active=True)
+    serializer_class = BannerSerializer
+    ordering = ['-created_at']
+
+
+@extend_schema(
+    operation_id='products_banner_detail',
+    tags=['banners'],
+    summary='Get banner details',
+    description='Retrieve details of a specific banner.',
+    responses={200: BannerSerializer}
+)
+class BannerDetailView(generics.RetrieveAPIView):
+    """
+    Retrieve a banner.
+    """
+    queryset = Banner.objects.all()
+    serializer_class = BannerSerializer
+
+
+@extend_schema(
+    operation_id='products_collection_list',
+    tags=['collections'],
+    summary='List collections',
+    description='Get all active collections.',
+    responses={200: CollectionSerializer(many=True)}
+)
+class CollectionListView(generics.ListAPIView):
+    """
+    List all active collections.
+    """
+    queryset = Collection.objects.filter(is_active=True)
+    serializer_class = CollectionSerializer
+    ordering = ['-created_at']
+
+
+@extend_schema(
+    operation_id='products_collection_detail',
+    tags=['collections'],
+    summary='Get collection details',
+    description='Retrieve details of a specific collection.',
+    responses={200: CollectionSerializer}
+)
+class CollectionDetailView(generics.RetrieveAPIView):
+    """
+    Retrieve a collection.
+    """
+    queryset = Collection.objects.all()
+    serializer_class = CollectionSerializer

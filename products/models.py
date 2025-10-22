@@ -2,6 +2,46 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
+class Collection(models.Model):
+    """Collection model for grouping products."""
+    
+    name = models.CharField(
+        max_length=200,
+        verbose_name=_("Collection Name"),
+        help_text=_("Name of the collection")
+    )
+    
+    description = models.TextField(
+        verbose_name=_("Description"),
+        help_text=_("Description of the collection"),
+        blank=True
+    )
+    
+    slug = models.SlugField(
+        max_length=200,
+        unique=True,
+        verbose_name=_("Slug"),
+        help_text=_("URL-friendly version of the name")
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_("Active"),
+        help_text=_("Whether this collection is active")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = _("Collection")
+        verbose_name_plural = _("Collections")
+    
+    def __str__(self):
+        return self.name
+
+
 class Product(models.Model):
     """Product model with detailed information."""
     
@@ -22,6 +62,16 @@ class Product(models.Model):
         XXL = "xxl", _("XXL")
         XXXL = "xxxl", _("XXXL")
         ONE_SIZE = "one_size", _("One Size")
+    
+    collection = models.ForeignKey(
+        Collection,
+        on_delete=models.CASCADE,
+        related_name='products',
+        verbose_name=_("Collection"),
+        help_text=_("Collection this product belongs to"),
+        blank=True,
+        null=True
+    )
     
     name = models.CharField(
         max_length=200,
@@ -153,3 +203,48 @@ class ProductShot(models.Model):
                 is_primary=True
             ).exclude(id=self.id).update(is_primary=False)
         super().save(*args, **kwargs)
+
+
+class Banner(models.Model):
+    """Homepage banner with optional video and image fallback."""
+
+    title = models.CharField(
+        max_length=255,
+        verbose_name=_("Title"),
+        help_text=_("Administrative title for this banner"),
+        blank=True
+    )
+
+    video = models.FileField(
+        upload_to='banners/videos/',
+        verbose_name=_("Video"),
+        help_text=_("Banner video file (e.g., MP4, WebM)"),
+        blank=True,
+        null=True
+    )
+
+    image = models.ImageField(
+        upload_to='banners/images/',
+        verbose_name=_("Image Fallback"),
+        help_text=_("Fallback image when video cannot be played"),
+        blank=True,
+        null=True
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_("Active"),
+        help_text=_("Whether this banner is active on the homepage")
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_active', '-created_at']
+        verbose_name = _("Banner")
+        verbose_name_plural = _("Banners")
+
+    def __str__(self):
+        label = self.title or str(self.pk)
+        return f"Banner {label}"

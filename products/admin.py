@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Product, ProductShot
+from .models import Product, ProductShot, Banner, Collection
 
 
 class ProductShotInline(admin.TabularInline):
@@ -17,6 +17,7 @@ class ProductAdmin(admin.ModelAdmin):
     
     list_display = [
         'name',
+        'collection',
         'type',
         'size',
         'color',
@@ -26,6 +27,7 @@ class ProductAdmin(admin.ModelAdmin):
     ]
     
     list_filter = [
+        'collection',
         'type',
         'size',
         'color',
@@ -113,3 +115,65 @@ class ProductShotAdmin(admin.ModelAdmin):
         return "No image"
     
     image_preview.short_description = "Preview"
+
+
+@admin.register(Banner)
+class BannerAdmin(admin.ModelAdmin):
+    """Admin configuration for Banner model."""
+
+    list_display = [
+        'title',
+        'has_video',
+        'is_active',
+        'created_at'
+    ]
+
+    list_filter = [
+        'is_active',
+        'created_at'
+    ]
+
+    search_fields = [
+        'title'
+    ]
+
+    fields = [
+        'title',
+        'video',
+        'image',
+        'is_active'
+    ]
+
+    readonly_fields = []
+
+    def has_video(self, obj):
+        return bool(obj.video)
+
+    has_video.boolean = True
+    has_video.short_description = 'Video?'
+
+
+@admin.register(Collection)
+class CollectionAdmin(admin.ModelAdmin):
+    """Admin configuration for Collection model."""
+
+    list_display = [
+        'name',
+        'slug',
+        'is_active',
+        'created_at'
+    ]
+
+    list_filter = [
+        'is_active',
+        'created_at'
+    ]
+
+    search_fields = [
+        'name',
+        'slug'
+    ]
+
+    prepopulated_fields = {
+        'slug': ('name',)
+    }

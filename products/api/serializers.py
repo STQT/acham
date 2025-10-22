@@ -1,5 +1,59 @@
 from rest_framework import serializers
-from ..models import Product, ProductShot
+from ..models import Product, ProductShot, Collection, Banner
+
+
+class CollectionSerializer(serializers.ModelSerializer):
+    """Serializer for Collection model."""
+    
+    class Meta:
+        model = Collection
+        fields = [
+            'id',
+            'name',
+            'description',
+            'slug',
+            'is_active',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class BannerSerializer(serializers.ModelSerializer):
+    """Serializer for Banner model."""
+    
+    video_url = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Banner
+        fields = [
+            'id',
+            'title',
+            'video',
+            'video_url',
+            'image',
+            'image_url',
+            'is_active',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_video_url(self, obj) -> str | None:
+        """Get the video URL for the banner."""
+        if obj.video:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.video.url)
+            return obj.video.url
+        return None
+
+
+class ChoiceItemSerializer(serializers.Serializer):
+    """Serializer for simple value/label pairs."""
+    value = serializers.CharField()
+    label = serializers.CharField()
 
 
 class ProductShotSerializer(serializers.ModelSerializer):
@@ -19,9 +73,10 @@ class ProductShotSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    """Serializer for Product model with nested shots."""
+    """Serializer for Product model with nested shots and collection."""
     
     shots = ProductShotSerializer(many=True, read_only=True)
+    collection = CollectionSerializer(read_only=True)
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     size_display = serializers.CharField(source='get_size_display', read_only=True)
     
@@ -29,6 +84,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id',
+            'collection',
             'name',
             'size',
             'size_display',
@@ -58,6 +114,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     """Simplified serializer for product lists."""
     
     primary_image = serializers.SerializerMethodField()
+    collection = CollectionSerializer(read_only=True)
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     size_display = serializers.CharField(source='get_size_display', read_only=True)
     
@@ -65,6 +122,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id',
+            'collection',
             'name',
             'size',
             'size_display',
@@ -79,7 +137,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             'created_at'
         ]
     
-    def get_primary_image(self, obj):
+    def get_primary_image(self, obj) -> str | None:
         """Get the primary image URL for the product."""
         primary_shot = obj.shots.filter(is_primary=True).first()
         if primary_shot:
@@ -113,3 +171,10 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Price must be greater than zero.")
         return value
+
+
+class ProductCompleteDetailsSerializer(serializers.Serializer):
+    """Serializer describing the complete product details response."""
+    product = ProductSerializer()
+    shots = ProductShotSerializer(many=True)
+    metadata = serializers.DictField()

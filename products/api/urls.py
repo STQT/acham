@@ -5,13 +5,22 @@ app_name = 'products_api'
 
 urlpatterns = [
     # Product endpoints
-    path('', views.ProductListCreateView.as_view(), name='product-list-create'),
+    path('', views.ProductListView.as_view(), name='product-list'),
     path('<int:pk>/', views.ProductDetailView.as_view(), name='product-detail'),
+    path('<int:pk>/complete/', views.product_complete_details, name='product-complete-details'),
     path('search/', views.product_search, name='product-search'),
     path('types/', views.product_types, name='product-types'),
     path('sizes/', views.product_sizes, name='product-sizes'),
     
     # Product shot endpoints
-    path('<int:product_id>/shots/', views.ProductShotListCreateView.as_view(), name='product-shot-list-create'),
+    path('<int:product_id>/shots/', views.ProductShotListView.as_view(), name='product-shot-list'),
     path('<int:product_id>/shots/<int:pk>/', views.ProductShotDetailView.as_view(), name='product-shot-detail'),
+    
+    # Banner endpoints
+    path('banners/', views.BannerListView.as_view(), name='banner-list'),
+    path('banners/<int:pk>/', views.BannerDetailView.as_view(), name='banner-detail'),
+    
+    # Collection endpoints
+    path('collections/', views.CollectionListView.as_view(), name='collection-list'),
+    path('collections/<int:pk>/', views.CollectionDetailView.as_view(), name='collection-detail'),
 ]
