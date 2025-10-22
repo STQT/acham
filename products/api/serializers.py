@@ -10,6 +10,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'name',
+            'image',
             'description',
             'slug',
             'is_active',

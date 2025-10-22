@@ -159,6 +159,7 @@ class CollectionAdmin(admin.ModelAdmin):
 
     list_display = [
         'name',
+        'image',
         'slug',
         'is_active',
         'created_at'

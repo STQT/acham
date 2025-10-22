@@ -11,6 +11,14 @@ class Collection(models.Model):
         help_text=_("Name of the collection")
     )
     
+    image = models.ImageField(
+        upload_to='collections/',
+        verbose_name=_("Image"),
+        help_text=_("Image of the collection"),
+        blank=True,
+        null=True
+    )
+
     description = models.TextField(
         verbose_name=_("Description"),
         help_text=_("Description of the collection"),
