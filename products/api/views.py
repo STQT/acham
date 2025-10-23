@@ -284,10 +284,44 @@ class CollectionListView(generics.ListAPIView):
 )
 class CollectionDetailView(generics.RetrieveAPIView):
     """
-    Retrieve a collection.
+    Retrieve a collection with its products.
     """
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        collection = self.get_object()
+        context['collection'] = collection
+        return context
+
+
+class CollectionProductsView(generics.ListAPIView):
+    """
+    List products in a specific collection with search and filtering.
+    """
+    serializer_class = ProductListSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'material', 'color', 'short_description']
+    ordering_fields = ['name', 'price', 'created_at']
+    ordering = ['-created_at']
+    
+    def get_queryset(self):
+        """Get products from the specified collection."""
+        collection_id = self.kwargs['collection_id']
+        return Product.objects.filter(
+            collection_id=collection_id,
+            is_available=True
+        ).select_related('collection').prefetch_related('shots')
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        try:
+            collection = Collection.objects.get(id=self.kwargs['collection_id'])
+            context['collection'] = collection
+        except Collection.DoesNotExist:
+            pass
+        return context
 
 
 class NewArrivalsListView(generics.ListAPIView):
@@ -350,6 +384,103 @@ def new_arrivals_page(request):
         'products': products_data,
         'total_collections': len(collections_data),
         'total_products': len(products_data)
+    })
+
+
+@api_view(['GET'])
+def collection_page(request, collection_id):
+    """
+    Get complete collection page data including collection details and products.
+    """
+    try:
+        collection = Collection.objects.get(id=collection_id)
+    except Collection.DoesNotExist:
+        return Response({'error': 'Collection not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Get products from the collection
+    products = Product.objects.filter(
+        collection=collection,
+        is_available=True
+    ).select_related('collection').prefetch_related('shots').order_by('-created_at')
+    
+    # Apply search if provided
+    search_query = request.GET.get('search', '')
+    if search_query:
+        products = products.filter(
+            Q(name__icontains=search_query) |
+            Q(material__icontains=search_query) |
+            Q(color__icontains=search_query) |
+            Q(short_description__icontains=search_query)
+        )
+    
+    # Apply filtering
+    product_type = request.GET.get('type')
+    if product_type:
+        products = products.filter(type=product_type)
+    
+    size = request.GET.get('size')
+    if size:
+        products = products.filter(size=size)
+    
+    color = request.GET.get('color')
+    if color:
+        products = products.filter(color__icontains=color)
+    
+    # Apply price range filtering
+    min_price = request.GET.get('min_price')
+    if min_price:
+        try:
+            products = products.filter(price__gte=float(min_price))
+        except ValueError:
+            pass
+    
+    max_price = request.GET.get('max_price')
+    if max_price:
+        try:
+            products = products.filter(price__lte=float(max_price))
+        except ValueError:
+            pass
+    
+    # Serialize data
+    collection_data = CollectionSerializer(collection, context={'request': request}).data
+    products_data = ProductListSerializer(products, many=True, context={'request': request}).data
+    
+    return Response({
+        'collection': collection_data,
+        'products': products_data,
+        'total_products': products.count(),
+        'search_query': search_query,
+        'filters': {
+            'type': product_type,
+            'size': size,
+            'color': color,
+            'min_price': min_price,
+            'max_price': max_price
+        }
+    })
+
+
+@api_view(['GET'])
+def search_collections(request):
+    """
+    Search collections by name.
+    """
+    search_query = request.GET.get('q', '')
+    
+    if not search_query:
+        return Response({'error': 'Search query is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    collections = Collection.objects.filter(
+        Q(name__icontains=search_query) |
+        Q(slug__icontains=search_query),
+        is_active=True
+    ).order_by('-created_at')
+    
+    serializer = CollectionSerializer(collections, many=True, context={'request': request})
+    return Response({
+        'collections': serializer.data,
+        'total_collections': collections.count(),
+        'search_query': search_query
     })
 
 

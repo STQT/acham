@@ -19,6 +19,9 @@ urlpatterns = [
     # Collection endpoints
     path('collections/', views.CollectionListView.as_view(), name='collection-list'),
     path('collections/<int:pk>/', views.CollectionDetailView.as_view(), name='collection-detail'),
+    path('collections/<int:collection_id>/products/', views.CollectionProductsView.as_view(), name='collection-products'),
+    path('collections/<int:collection_id>/page/', views.collection_page, name='collection-page'),
+    path('collections/search/', views.search_collections, name='search-collections'),
     
     # New Arrivals endpoints
     path('new-arrivals/', views.NewArrivalsListView.as_view(), name='new-arrivals-list'),

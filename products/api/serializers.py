@@ -5,6 +5,8 @@ from ..models import Product, ProductShot, UserFavorite, ProductShare, Cart, Car
 class CollectionSerializer(serializers.ModelSerializer):
     """Serializer for Collection model."""
     
+    product_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Collection
         fields = [
@@ -14,10 +16,15 @@ class CollectionSerializer(serializers.ModelSerializer):
             'slug',
             'is_active',
             'is_new_arrival',
+            'product_count',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_product_count(self, obj):
+        """Get the number of available products in this collection."""
+        return obj.products.filter(is_available=True).count()
 
 
 class ChoiceItemSerializer(serializers.Serializer):
