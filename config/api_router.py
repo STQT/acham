@@ -13,4 +13,5 @@ router.register("users", UserViewSet)
 app_name = "api"
 urlpatterns = router.urls + [
     path("products/", include("products.api.urls")),
+    path("banner/", include("banner.api.urls")),
 ]

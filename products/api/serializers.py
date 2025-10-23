@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Product, ProductShot, Collection, Banner
+from ..models import Product, ProductShot, Collection
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -18,37 +18,6 @@ class CollectionSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-
-
-class BannerSerializer(serializers.ModelSerializer):
-    """Serializer for Banner model."""
-    
-    video_url = serializers.SerializerMethodField()
-    image_url = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Banner
-        fields = [
-            'id',
-            'title',
-            'video',
-            'video_url',
-            'image',
-            'image_url',
-            'is_active',
-            'created_at',
-            'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-    
-    def get_video_url(self, obj) -> str | None:
-        """Get the video URL for the banner."""
-        if obj.video:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.video.url)
-            return obj.video.url
-        return None
 
 
 class ChoiceItemSerializer(serializers.Serializer):

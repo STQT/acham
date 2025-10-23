@@ -15,11 +15,7 @@ urlpatterns = [
     # Product shot endpoints
     path('<int:product_id>/shots/', views.ProductShotListView.as_view(), name='product-shot-list'),
     path('<int:product_id>/shots/<int:pk>/', views.ProductShotDetailView.as_view(), name='product-shot-detail'),
-    
-    # Banner endpoints
-    path('banners/', views.BannerListView.as_view(), name='banner-list'),
-    path('banners/<int:pk>/', views.BannerDetailView.as_view(), name='banner-detail'),
-    
+
     # Collection endpoints
     path('collections/', views.CollectionListView.as_view(), name='collection-list'),
     path('collections/<int:pk>/', views.CollectionDetailView.as_view(), name='collection-detail'),

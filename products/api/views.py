@@ -4,13 +4,12 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Q
 
-from ..models import Product, ProductShot, Collection, Banner
+from ..models import Product, ProductShot, Collection
 from .serializers import (
     ProductSerializer,
     ProductListSerializer,
     ProductShotSerializer,
     CollectionSerializer,
-    BannerSerializer,
     ChoiceItemSerializer,
     ProductCompleteDetailsSerializer
 )
@@ -251,37 +250,6 @@ def product_complete_details(request, pk):
     }
     
     return Response(response_data)
-
-
-@extend_schema(
-    operation_id='products_banner_list',
-    tags=['banners'],
-    summary='List banners',
-    description='Get all active banners for the homepage.',
-    responses={200: BannerSerializer(many=True)}
-)
-class BannerListView(generics.ListAPIView):
-    """
-    List all active banners.
-    """
-    queryset = Banner.objects.filter(is_active=True)
-    serializer_class = BannerSerializer
-    ordering = ['-created_at']
-
-
-@extend_schema(
-    operation_id='products_banner_detail',
-    tags=['banners'],
-    summary='Get banner details',
-    description='Retrieve details of a specific banner.',
-    responses={200: BannerSerializer}
-)
-class BannerDetailView(generics.RetrieveAPIView):
-    """
-    Retrieve a banner.
-    """
-    queryset = Banner.objects.all()
-    serializer_class = BannerSerializer
 
 
 @extend_schema(
