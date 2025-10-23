@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Product, ProductShot, UserFavorite, ProductShare
+from .models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem
 
 
 class ProductShotInline(admin.TabularInline):
@@ -197,3 +197,69 @@ class ProductShareAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('product', 'user')
+
+
+class CartItemInline(admin.TabularInline):
+    """Inline admin for CartItem."""
+    model = CartItem
+    extra = 0
+    fields = ['product', 'quantity', 'total_price', 'added_at']
+    readonly_fields = ['total_price', 'added_at']
+
+
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
+    """Admin configuration for Cart model."""
+    
+    list_display = [
+        'user',
+        'item_count',
+        'total_items',
+        'total_price',
+        'created_at',
+        'updated_at'
+    ]
+    
+    list_filter = [
+        'created_at',
+        'updated_at'
+    ]
+    
+    search_fields = [
+        'user__email'
+    ]
+    
+    readonly_fields = ['created_at', 'updated_at', 'total_items', 'total_price', 'item_count']
+    
+    inlines = [CartItemInline]
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+
+
+@admin.register(CartItem)
+class CartItemAdmin(admin.ModelAdmin):
+    """Admin configuration for CartItem model."""
+    
+    list_display = [
+        'cart',
+        'product',
+        'quantity',
+        'total_price',
+        'added_at'
+    ]
+    
+    list_filter = [
+        'added_at',
+        'product__type'
+    ]
+    
+    search_fields = [
+        'cart__user__email',
+        'product__name'
+    ]
+    
+    readonly_fields = ['total_price', 'added_at', 'updated_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('cart__user', 'product')

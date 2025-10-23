@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Product, ProductShot, UserFavorite, ProductShare
+from ..models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -209,6 +209,80 @@ class ProductShareCreateSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             validated_data['user'] = request.user
         return super().create(validated_data)
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    """Serializer for CartItem model."""
+    
+    product = ProductListSerializer(read_only=True)
+    total_price = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = CartItem
+        fields = [
+            'id',
+            'product',
+            'quantity',
+            'total_price',
+            'added_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'added_at', 'updated_at']
+
+
+class CartItemCreateUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for creating and updating cart items."""
+    
+    class Meta:
+        model = CartItem
+        fields = ['product', 'quantity']
+    
+    def validate_quantity(self, value):
+        """Validate quantity is positive."""
+        if value <= 0:
+            raise serializers.ValidationError("Quantity must be greater than zero.")
+        return value
+
+
+class CartSerializer(serializers.ModelSerializer):
+    """Serializer for Cart model."""
+    
+    items = CartItemSerializer(many=True, read_only=True)
+    total_items = serializers.ReadOnlyField()
+    total_price = serializers.ReadOnlyField()
+    item_count = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Cart
+        fields = [
+            'id',
+            'user',
+            'items',
+            'total_items',
+            'total_price',
+            'item_count',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+
+class CartSummarySerializer(serializers.ModelSerializer):
+    """Simplified cart serializer for quick overview."""
+    
+    total_items = serializers.ReadOnlyField()
+    total_price = serializers.ReadOnlyField()
+    item_count = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Cart
+        fields = [
+            'id',
+            'total_items',
+            'total_price',
+            'item_count',
+            'updated_at'
+        ]
 
 
 class ProductCompleteDetailsSerializer(serializers.Serializer):

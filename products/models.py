@@ -289,3 +289,83 @@ class ProductShare(models.Model):
     
     def __str__(self):
         return f"{self.product.name} - {self.get_platform_display()}"
+
+
+class Cart(models.Model):
+    """Shopping cart model for users."""
+    
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='cart',
+        verbose_name=_("User")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = _("Cart")
+        verbose_name_plural = _("Carts")
+    
+    def __str__(self):
+        return f"Cart for {self.user.email}"
+    
+    @property
+    def total_items(self):
+        """Get total number of items in cart."""
+        return self.items.aggregate(total=models.Sum('quantity'))['total'] or 0
+    
+    @property
+    def total_price(self):
+        """Calculate total price of all items in cart."""
+        total = 0
+        for item in self.items.all():
+            total += item.product.price * item.quantity
+        return total
+    
+    @property
+    def item_count(self):
+        """Get count of unique items in cart."""
+        return self.items.count()
+
+
+class CartItem(models.Model):
+    """Individual items in a shopping cart."""
+    
+    cart = models.ForeignKey(
+        Cart,
+        on_delete=models.CASCADE,
+        related_name='items',
+        verbose_name=_("Cart")
+    )
+    
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='cart_items',
+        verbose_name=_("Product")
+    )
+    
+    quantity = models.PositiveIntegerField(
+        default=1,
+        verbose_name=_("Quantity"),
+        help_text=_("Number of this product in cart")
+    )
+    
+    added_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['cart', 'product']
+        ordering = ['-added_at']
+        verbose_name = _("Cart Item")
+        verbose_name_plural = _("Cart Items")
+    
+    def __str__(self):
+        return f"{self.quantity}x {self.product.name} in {self.cart}"
+    
+    @property
+    def total_price(self):
+        """Calculate total price for this cart item."""
+        return self.product.price * self.quantity

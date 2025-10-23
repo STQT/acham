@@ -29,4 +29,14 @@ urlpatterns = [
     # Share endpoints
     path('shares/', views.ProductShareCreateView.as_view(), name='share-create'),
     path('<int:product_id>/share-stats/', views.product_share_stats, name='share-stats'),
+    
+    # Cart endpoints
+    path('cart/', views.CartDetailView.as_view(), name='cart-detail'),
+    path('cart/summary/', views.CartSummaryView.as_view(), name='cart-summary'),
+    path('cart/items/', views.CartItemListCreateView.as_view(), name='cart-item-list-create'),
+    path('cart/items/<int:pk>/', views.CartItemDetailView.as_view(), name='cart-item-detail'),
+    path('cart/clear/', views.clear_cart, name='clear-cart'),
+    path('<int:product_id>/add-to-cart/', views.add_to_cart, name='add-to-cart'),
+    path('<int:product_id>/remove-from-cart/', views.remove_from_cart, name='remove-from-cart'),
+    path('<int:product_id>/update-cart-quantity/', views.update_cart_item_quantity, name='update-cart-quantity'),
 ]

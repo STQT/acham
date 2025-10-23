@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Q
 
-from ..models import Product, ProductShot, Collection, UserFavorite, ProductShare
+from ..models import Product, ProductShot, Collection, UserFavorite, ProductShare, Cart, CartItem
 from .serializers import (
     ProductSerializer,
     ProductListSerializer,
@@ -14,7 +14,11 @@ from .serializers import (
     ProductCompleteDetailsSerializer,
     UserFavoriteSerializer,
     ProductShareSerializer,
-    ProductShareCreateSerializer
+    ProductShareCreateSerializer,
+    CartSerializer,
+    CartItemSerializer,
+    CartItemCreateUpdateSerializer,
+    CartSummarySerializer
 )
 
 
@@ -386,3 +390,148 @@ def user_favorites(request):
     favorites = UserFavorite.objects.filter(user=request.user)
     serializer = UserFavoriteSerializer(favorites, many=True, context={'request': request})
     return Response(serializer.data)
+
+
+# Cart Views
+
+class CartDetailView(generics.RetrieveAPIView):
+    """
+    Get user's cart with all items.
+    """
+    serializer_class = CartSerializer
+    
+    def get_object(self):
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        return cart
+
+
+class CartSummaryView(generics.RetrieveAPIView):
+    """
+    Get cart summary (total items, price, etc.).
+    """
+    serializer_class = CartSummarySerializer
+    
+    def get_object(self):
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        return cart
+
+
+class CartItemListCreateView(generics.ListCreateAPIView):
+    """
+    List cart items or add item to cart.
+    """
+    serializer_class = CartItemSerializer
+    
+    def get_queryset(self):
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        return CartItem.objects.filter(cart=cart)
+    
+    def perform_create(self, serializer):
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        serializer.save(cart=cart)
+
+
+class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update, or remove cart item.
+    """
+    serializer_class = CartItemSerializer
+    
+    def get_queryset(self):
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        return CartItem.objects.filter(cart=cart)
+
+
+@api_view(['POST'])
+def add_to_cart(request, product_id):
+    """
+    Add product to cart or update quantity if already exists.
+    """
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if not product.is_available:
+        return Response({'error': 'Product is not available'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    quantity = request.data.get('quantity', 1)
+    if quantity <= 0:
+        return Response({'error': 'Quantity must be greater than zero'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    cart, created = Cart.objects.get_or_create(user=request.user)
+    
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        defaults={'quantity': quantity}
+    )
+    
+    if not created:
+        cart_item.quantity += quantity
+        cart_item.save()
+    
+    serializer = CartItemSerializer(cart_item, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+def remove_from_cart(request, product_id):
+    """
+    Remove product from cart.
+    """
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        cart = Cart.objects.get(user=request.user)
+        cart_item = CartItem.objects.get(cart=cart, product=product)
+        cart_item.delete()
+        return Response({'message': 'Product removed from cart'}, status=status.HTTP_200_OK)
+    except Cart.DoesNotExist:
+        return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
+    except CartItem.DoesNotExist:
+        return Response({'error': 'Product not in cart'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['PUT'])
+def update_cart_item_quantity(request, product_id):
+    """
+    Update quantity of a product in cart.
+    """
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    quantity = request.data.get('quantity')
+    if quantity is None or quantity <= 0:
+        return Response({'error': 'Valid quantity is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        cart = Cart.objects.get(user=request.user)
+        cart_item = CartItem.objects.get(cart=cart, product=product)
+        cart_item.quantity = quantity
+        cart_item.save()
+        
+        serializer = CartItemSerializer(cart_item, context={'request': request})
+        return Response(serializer.data)
+    except Cart.DoesNotExist:
+        return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
+    except CartItem.DoesNotExist:
+        return Response({'error': 'Product not in cart'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['DELETE'])
+def clear_cart(request):
+    """
+    Remove all items from cart.
+    """
+    try:
+        cart = Cart.objects.get(user=request.user)
+        cart.items.all().delete()
+        return Response({'message': 'Cart cleared'}, status=status.HTTP_200_OK)
+    except Cart.DoesNotExist:
+        return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
