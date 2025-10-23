@@ -23,6 +23,7 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     # Products
     path("products/", include("products.urls", namespace="products")),
+    path("banner/", include("banner.urls" , namespace="banner")),
     # Your stuff: custom urls includes go here
     # ...
     # Media files

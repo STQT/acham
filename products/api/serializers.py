@@ -11,7 +11,6 @@ class CollectionSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'image',
-            'description',
             'slug',
             'is_active',
             'created_at',

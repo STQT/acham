@@ -47,7 +47,7 @@ class ProductAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'type', 'size', 'color', 'material')
+            'fields': ('name', 'type', 'size', 'collection', 'color', 'material')
         }),
         ('Descriptions', {
             'fields': ('short_description', 'detailed_description', 'care_instructions'),

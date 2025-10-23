@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Banner
+from .models import Banner, FAQ
 # Register your models here.
 
 @admin.register(Banner)
@@ -37,3 +37,16 @@ class BannerAdmin(admin.ModelAdmin):
     has_video.boolean = True
     has_video.short_description = 'Video?'
 
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    """Admin configuration for FAQ model."""
+
+    list_display = [
+        'question',
+        'answer',
+        'created_at'
+    ]
+
+    list_filter = [
+        'created_at'
+    ]

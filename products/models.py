@@ -19,12 +19,6 @@ class Collection(models.Model):
         null=True
     )
 
-    description = models.TextField(
-        verbose_name=_("Description"),
-        help_text=_("Description of the collection"),
-        blank=True
-    )
-    
     slug = models.SlugField(
         max_length=200,
         unique=True,

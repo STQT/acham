@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Banner
+from ..models import Banner, FAQ
 
 class BannerSerializer(serializers.ModelSerializer):
     """Serializer for Banner model."""
@@ -25,3 +25,18 @@ class BannerSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.video.url)
             return obj.video.url
         return None
+
+class FAQSerializer(serializers.ModelSerializer):
+    """Serializer for FAQ model."""
+    
+    class Meta:
+        model = FAQ
+        fields = [
+            'id',
+            'question',
+            'answer',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+

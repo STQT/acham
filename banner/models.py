@@ -45,3 +45,29 @@ class Banner(models.Model):
     def __str__(self):
         label = self.title or str(self.pk)
         return f"Banner {label}"
+
+
+class FAQ(models.Model):
+    """FAQ model for frequently asked questions."""
+
+    question = models.CharField(
+        max_length=255,
+        verbose_name=_("Question"),
+        help_text=_("Question for this FAQ")
+    )
+
+    answer = models.TextField(
+        verbose_name=_("Answer"),
+        help_text=_("Answer for this FAQ")
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = _("FAQ")
+        verbose_name_plural = _("FAQs")
+
+    def __str__(self):
+        return self.question
