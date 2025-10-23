@@ -126,11 +126,13 @@ class CollectionAdmin(admin.ModelAdmin):
         'image',
         'slug',
         'is_active',
+        'is_new_arrival',
         'created_at'
     ]
 
     list_filter = [
         'is_active',
+        'is_new_arrival',
         'created_at'
     ]
 
@@ -142,6 +144,15 @@ class CollectionAdmin(admin.ModelAdmin):
     prepopulated_fields = {
         'slug': ('name',)
     }
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'slug', 'image')
+        }),
+        ('Settings', {
+            'fields': ('is_active', 'is_new_arrival')
+        }),
+    )
 
 
 @admin.register(UserFavorite)

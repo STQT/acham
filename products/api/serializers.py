@@ -13,6 +13,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             'image',
             'slug',
             'is_active',
+            'is_new_arrival',
             'created_at',
             'updated_at'
         ]

@@ -33,6 +33,12 @@ class Collection(models.Model):
         help_text=_("Whether this collection is active")
     )
     
+    is_new_arrival = models.BooleanField(
+        default=False,
+        verbose_name=_("New Arrival"),
+        help_text=_("Whether this collection should appear in new arrivals page")
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

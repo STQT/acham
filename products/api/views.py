@@ -290,6 +290,69 @@ class CollectionDetailView(generics.RetrieveAPIView):
     serializer_class = CollectionSerializer
 
 
+class NewArrivalsListView(generics.ListAPIView):
+    """
+    List products from new arrival collections.
+    """
+    serializer_class = ProductListSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'material', 'color', 'short_description']
+    ordering_fields = ['name', 'price', 'created_at']
+    ordering = ['-created_at']
+    
+    def get_queryset(self):
+        """Get products from collections marked as new arrivals."""
+        return Product.objects.filter(
+            collection__is_new_arrival=True,
+            collection__is_active=True,
+            is_available=True
+        ).select_related('collection').prefetch_related('shots')
+
+
+@api_view(['GET'])
+def new_arrivals_collections(request):
+    """
+    Get collections marked as new arrivals.
+    """
+    collections = Collection.objects.filter(
+        is_new_arrival=True,
+        is_active=True
+    ).order_by('-created_at')
+    
+    serializer = CollectionSerializer(collections, many=True, context={'request': request})
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def new_arrivals_page(request):
+    """
+    Get complete new arrivals page data including collections and products.
+    """
+    # Get new arrival collections
+    collections = Collection.objects.filter(
+        is_new_arrival=True,
+        is_active=True
+    ).order_by('-created_at')
+    
+    # Get products from new arrival collections
+    products = Product.objects.filter(
+        collection__is_new_arrival=True,
+        collection__is_active=True,
+        is_available=True
+    ).select_related('collection').prefetch_related('shots').order_by('-created_at')
+    
+    # Serialize data
+    collections_data = CollectionSerializer(collections, many=True, context={'request': request}).data
+    products_data = ProductListSerializer(products, many=True, context={'request': request}).data
+    
+    return Response({
+        'collections': collections_data,
+        'products': products_data,
+        'total_collections': len(collections_data),
+        'total_products': len(products_data)
+    })
+
+
 # Favorites and Shares Views
 
 class UserFavoriteListCreateView(generics.ListCreateAPIView):

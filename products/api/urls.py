@@ -20,6 +20,11 @@ urlpatterns = [
     path('collections/', views.CollectionListView.as_view(), name='collection-list'),
     path('collections/<int:pk>/', views.CollectionDetailView.as_view(), name='collection-detail'),
     
+    # New Arrivals endpoints
+    path('new-arrivals/', views.NewArrivalsListView.as_view(), name='new-arrivals-list'),
+    path('new-arrivals/collections/', views.new_arrivals_collections, name='new-arrivals-collections'),
+    path('new-arrivals/page/', views.new_arrivals_page, name='new-arrivals-page'),
+    
     # Favorites endpoints
     path('favorites/', views.user_favorites, name='user-favorites'),
     path('favorites/manage/', views.UserFavoriteListCreateView.as_view(), name='favorite-list-create'),
