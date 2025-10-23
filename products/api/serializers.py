@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Product, ProductShot, Collection
+from ..models import Product, ProductShot, UserFavorite, ProductShare
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -48,6 +48,9 @@ class ProductSerializer(serializers.ModelSerializer):
     collection = CollectionSerializer(read_only=True)
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     size_display = serializers.CharField(source='get_size_display', read_only=True)
+    is_favorited = serializers.SerializerMethodField()
+    favorite_count = serializers.SerializerMethodField()
+    share_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -67,10 +70,28 @@ class ProductSerializer(serializers.ModelSerializer):
             'price',
             'is_available',
             'shots',
+            'is_favorited',
+            'favorite_count',
+            'share_count',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_is_favorited(self, obj):
+        """Check if the current user has favorited this product."""
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return UserFavorite.objects.filter(user=request.user, product=obj).exists()
+        return False
+    
+    def get_favorite_count(self, obj):
+        """Get the number of users who favorited this product."""
+        return obj.favorited_by.count()
+    
+    def get_share_count(self, obj):
+        """Get the number of times this product was shared."""
+        return obj.shares.count()
     
     def validate_price(self, value):
         """Validate that price is positive."""
@@ -140,6 +161,54 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Price must be greater than zero.")
         return value
+
+
+class UserFavoriteSerializer(serializers.ModelSerializer):
+    """Serializer for UserFavorite model."""
+    
+    product = ProductListSerializer(read_only=True)
+    
+    class Meta:
+        model = UserFavorite
+        fields = [
+            'id',
+            'product',
+            'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class ProductShareSerializer(serializers.ModelSerializer):
+    """Serializer for ProductShare model."""
+    
+    platform_display = serializers.CharField(source='get_platform_display', read_only=True)
+    
+    class Meta:
+        model = ProductShare
+        fields = [
+            'id',
+            'product',
+            'platform',
+            'platform_display',
+            'shared_at',
+            'is_successful'
+        ]
+        read_only_fields = ['id', 'shared_at']
+
+
+class ProductShareCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating product shares."""
+    
+    class Meta:
+        model = ProductShare
+        fields = ['product', 'platform', 'is_successful']
+    
+    def create(self, validated_data):
+        # Set user from request if authenticated
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        return super().create(validated_data)
 
 
 class ProductCompleteDetailsSerializer(serializers.Serializer):

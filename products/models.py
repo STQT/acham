@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 
 
 class Collection(models.Model):
@@ -205,3 +206,86 @@ class ProductShot(models.Model):
                 is_primary=True
             ).exclude(id=self.id).update(is_primary=False)
         super().save(*args, **kwargs)
+
+
+class UserFavorite(models.Model):
+    """Model for user product favorites."""
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='favorites',
+        verbose_name=_("User")
+    )
+    
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='favorited_by',
+        verbose_name=_("Product")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['user', 'product']
+        ordering = ['-created_at']
+        verbose_name = _("User Favorite")
+        verbose_name_plural = _("User Favorites")
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.product.name}"
+
+
+class ProductShare(models.Model):
+    """Model for tracking product shares."""
+    
+    class SharePlatform(models.TextChoices):
+        FACEBOOK = "facebook", _("Facebook")
+        TWITTER = "twitter", _("Twitter")
+        INSTAGRAM = "instagram", _("Instagram")
+        WHATSAPP = "whatsapp", _("WhatsApp")
+        TELEGRAM = "telegram", _("Telegram")
+        EMAIL = "email", _("Email")
+        COPY_LINK = "copy_link", _("Copy Link")
+        OTHER = "other", _("Other")
+    
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='shares',
+        verbose_name=_("Product")
+    )
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='product_shares',
+        verbose_name=_("User")
+    )
+    
+    platform = models.CharField(
+        max_length=20,
+        choices=SharePlatform.choices,
+        verbose_name=_("Platform"),
+        help_text=_("Platform where the product was shared")
+    )
+    
+    shared_at = models.DateTimeField(auto_now_add=True)
+    
+    # Optional: Track if share was successful
+    is_successful = models.BooleanField(
+        default=True,
+        verbose_name=_("Successful"),
+        help_text=_("Whether the share was successful")
+    )
+    
+    class Meta:
+        ordering = ['-shared_at']
+        verbose_name = _("Product Share")
+        verbose_name_plural = _("Product Shares")
+    
+    def __str__(self):
+        return f"{self.product.name} - {self.get_platform_display()}"

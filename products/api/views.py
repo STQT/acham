@@ -4,14 +4,17 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Q
 
-from ..models import Product, ProductShot, Collection
+from ..models import Product, ProductShot, Collection, UserFavorite, ProductShare
 from .serializers import (
     ProductSerializer,
     ProductListSerializer,
     ProductShotSerializer,
     CollectionSerializer,
     ChoiceItemSerializer,
-    ProductCompleteDetailsSerializer
+    ProductCompleteDetailsSerializer,
+    UserFavoriteSerializer,
+    ProductShareSerializer,
+    ProductShareCreateSerializer
 )
 
 
@@ -281,3 +284,105 @@ class CollectionDetailView(generics.RetrieveAPIView):
     """
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
+
+
+# Favorites and Shares Views
+
+class UserFavoriteListCreateView(generics.ListCreateAPIView):
+    """
+    List user's favorites or add a product to favorites.
+    """
+    serializer_class = UserFavoriteSerializer
+    
+    def get_queryset(self):
+        return UserFavorite.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class UserFavoriteDestroyView(generics.DestroyAPIView):
+    """
+    Remove a product from user's favorites.
+    """
+    serializer_class = UserFavoriteSerializer
+    
+    def get_queryset(self):
+        return UserFavorite.objects.filter(user=self.request.user)
+
+
+@api_view(['POST', 'DELETE'])
+def toggle_favorite(request, product_id):
+    """
+    Toggle favorite status for a product.
+    POST: Add to favorites
+    DELETE: Remove from favorites
+    """
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'POST':
+        favorite, created = UserFavorite.objects.get_or_create(
+            user=request.user,
+            product=product
+        )
+        if created:
+            return Response({'message': 'Product added to favorites'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'message': 'Product already in favorites'}, status=status.HTTP_200_OK)
+    
+    elif request.method == 'DELETE':
+        try:
+            favorite = UserFavorite.objects.get(user=request.user, product=product)
+            favorite.delete()
+            return Response({'message': 'Product removed from favorites'}, status=status.HTTP_200_OK)
+        except UserFavorite.DoesNotExist:
+            return Response({'message': 'Product not in favorites'}, status=status.HTTP_200_OK)
+
+
+class ProductShareCreateView(generics.CreateAPIView):
+    """
+    Create a product share record.
+    """
+    serializer_class = ProductShareCreateSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user if self.request.user.is_authenticated else None)
+
+
+@api_view(['GET'])
+def product_share_stats(request, product_id):
+    """
+    Get sharing statistics for a product.
+    """
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Get share counts by platform
+    share_stats = {}
+    for platform, _ in ProductShare.SharePlatform.choices:
+        count = ProductShare.objects.filter(product=product, platform=platform).count()
+        if count > 0:
+            share_stats[platform] = count
+    
+    total_shares = ProductShare.objects.filter(product=product).count()
+    
+    return Response({
+        'product_id': product.id,
+        'total_shares': total_shares,
+        'platform_stats': share_stats
+    })
+
+
+@api_view(['GET'])
+def user_favorites(request):
+    """
+    Get current user's favorite products.
+    """
+    favorites = UserFavorite.objects.filter(user=request.user)
+    serializer = UserFavoriteSerializer(favorites, many=True, context={'request': request})
+    return Response(serializer.data)

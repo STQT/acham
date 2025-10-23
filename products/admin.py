@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Product, ProductShot, Collection
+from .models import Product, ProductShot, UserFavorite, ProductShare
 
 
 class ProductShotInline(admin.TabularInline):
@@ -142,3 +142,58 @@ class CollectionAdmin(admin.ModelAdmin):
     prepopulated_fields = {
         'slug': ('name',)
     }
+
+
+@admin.register(UserFavorite)
+class UserFavoriteAdmin(admin.ModelAdmin):
+    """Admin configuration for UserFavorite model."""
+    
+    list_display = [
+        'user',
+        'product',
+        'created_at'
+    ]
+    
+    list_filter = [
+        'created_at',
+        'product__type'
+    ]
+    
+    search_fields = [
+        'user__email',
+        'product__name'
+    ]
+    
+    readonly_fields = ['created_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'product')
+
+
+@admin.register(ProductShare)
+class ProductShareAdmin(admin.ModelAdmin):
+    """Admin configuration for ProductShare model."""
+    
+    list_display = [
+        'product',
+        'user',
+        'platform',
+        'is_successful',
+        'shared_at'
+    ]
+    
+    list_filter = [
+        'platform',
+        'is_successful',
+        'shared_at'
+    ]
+    
+    search_fields = [
+        'product__name',
+        'user__email'
+    ]
+    
+    readonly_fields = ['shared_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('product', 'user')
