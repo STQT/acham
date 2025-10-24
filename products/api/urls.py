@@ -47,4 +47,8 @@ urlpatterns = [
     path('<int:product_id>/add-to-cart/', views.add_to_cart, name='add-to-cart'),
     path('<int:product_id>/remove-from-cart/', views.remove_from_cart, name='remove-from-cart'),
     path('<int:product_id>/update-cart-quantity/', views.update_cart_item_quantity, name='update-cart-quantity'),
+    
+    # Product Recommendations
+    path('<int:product_id>/complete-the-look/', views.complete_the_look, name='complete-the-look'),
+    path('<int:product_id>/recommendations/', views.product_recommendations, name='product-recommendations'),
 ]

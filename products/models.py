@@ -375,3 +375,60 @@ class CartItem(models.Model):
     def total_price(self):
         """Calculate total price for this cart item."""
         return self.product.price * self.quantity
+
+
+class ProductRelation(models.Model):
+    """Model for defining relationships between products."""
+    
+    class RelationType(models.TextChoices):
+        COMPLETE_THE_LOOK = "complete_the_look", _("Complete the Look")
+        YOU_MAY_ALSO_LIKE = "you_may_also_like", _("You May Also Like")
+        FREQUENTLY_BOUGHT_TOGETHER = "frequently_bought_together", _("Frequently Bought Together")
+        SIMILAR_PRODUCTS = "similar_products", _("Similar Products")
+        ACCESSORIES = "accessories", _("Accessories")
+        OUTFIT_COMPLETE = "outfit_complete", _("Outfit Complete")
+    
+    source_product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='related_products',
+        verbose_name=_("Source Product")
+    )
+    
+    target_product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='related_from_products',
+        verbose_name=_("Target Product")
+    )
+    
+    relation_type = models.CharField(
+        max_length=30,
+        choices=RelationType.choices,
+        verbose_name=_("Relation Type"),
+        help_text=_("Type of relationship between products")
+    )
+    
+    priority = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("Priority"),
+        help_text=_("Higher numbers appear first (0 = lowest priority)")
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_("Active"),
+        help_text=_("Whether this relationship is active")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['source_product', 'target_product', 'relation_type']
+        ordering = ['-priority', '-created_at']
+        verbose_name = _("Product Relation")
+        verbose_name_plural = _("Product Relations")
+    
+    def __str__(self):
+        return f"{self.source_product.name} → {self.target_product.name} ({self.get_relation_type_display()})"

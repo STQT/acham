@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem
+from .models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem, ProductRelation
 
 
 class ProductShotInline(admin.TabularInline):
@@ -274,3 +274,43 @@ class CartItemAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('cart__user', 'product')
+
+
+@admin.register(ProductRelation)
+class ProductRelationAdmin(admin.ModelAdmin):
+    """Admin configuration for ProductRelation model."""
+    
+    list_display = [
+        'source_product',
+        'target_product',
+        'relation_type',
+        'priority',
+        'is_active',
+        'created_at'
+    ]
+    
+    list_filter = [
+        'relation_type',
+        'is_active',
+        'created_at'
+    ]
+    
+    search_fields = [
+        'source_product__name',
+        'target_product__name'
+    ]
+    
+    list_editable = ['priority', 'is_active']
+    
+    fields = [
+        'source_product',
+        'target_product',
+        'relation_type',
+        'priority',
+        'is_active'
+    ]
+    
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('source_product', 'target_product')
