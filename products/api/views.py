@@ -22,6 +22,11 @@ from .serializers import (
 )
 
 
+@extend_schema(
+    tags=["Products"],
+    summary="List all products",
+    description="Get a paginated list of all products with filtering and search capabilities"
+)
 class ProductListView(generics.ListAPIView):
     """
     List all products.
@@ -65,6 +70,11 @@ class ProductListView(generics.ListAPIView):
         return queryset
 
 
+@extend_schema(
+    tags=["Products"],
+    summary="Get product details",
+    description="Retrieve detailed information about a specific product"
+)
 class ProductDetailView(generics.RetrieveAPIView):
     """
     Retrieve a product.
@@ -73,6 +83,11 @@ class ProductDetailView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
 
 
+@extend_schema(
+    tags=["Product Shots"],
+    summary="List product shots",
+    description="Get all images/shots for a specific product"
+)
 class ProductShotListView(generics.ListAPIView):
     """
     List all shots for a product.
@@ -87,6 +102,11 @@ class ProductShotListView(generics.ListAPIView):
         return ProductShot.objects.filter(product_id=product_id)
 
 
+@extend_schema(
+    tags=["Product Shots"],
+    summary="Get product shot details",
+    description="Retrieve detailed information about a specific product shot"
+)
 class ProductShotDetailView(generics.RetrieveAPIView):
     """
     Retrieve a product shot.
@@ -100,7 +120,7 @@ class ProductShotDetailView(generics.RetrieveAPIView):
 
 @extend_schema(
     operation_id='products_product_search',
-    tags=['products'],
+    tags=['Products'],
     summary='Advanced product search',
     description='Search products with multiple filters including text, type, size, color, and price range.',
     responses={200: ProductListSerializer(many=True)},
@@ -177,7 +197,7 @@ def product_search(request):
 
 @extend_schema(
     operation_id='products_product_types',
-    tags=['products'],
+    tags=['Products'],
     summary='Get product types',
     description='Get available product types and their choices.',
     responses={200: ChoiceItemSerializer(many=True)}
@@ -209,7 +229,7 @@ def product_sizes(request):
 
 @extend_schema(
     operation_id='products_product_complete_details',
-    tags=['products'],
+    tags=['Products'],
     summary='Get complete product details',
     description='Get comprehensive product information including all shots, available types, sizes, and search options.',
     responses={200: ProductCompleteDetailsSerializer}
@@ -261,7 +281,7 @@ def product_complete_details(request, pk):
 
 @extend_schema(
     operation_id='products_collection_list',
-    tags=['collections'],
+    tags=['Collections'],
     summary='List collections',
     description='Get all active collections.',
     responses={200: CollectionSerializer(many=True)}
@@ -277,7 +297,7 @@ class CollectionListView(generics.ListAPIView):
 
 @extend_schema(
     operation_id='products_collection_detail',
-    tags=['collections'],
+    tags=['Collections'],
     summary='Get collection details',
     description='Retrieve details of a specific collection.',
     responses={200: CollectionSerializer}
@@ -324,6 +344,11 @@ class CollectionProductsView(generics.ListAPIView):
         return context
 
 
+@extend_schema(
+    tags=["New Arrivals"],
+    summary="List new arrival products",
+    description="Get products from collections marked as new arrivals"
+)
 class NewArrivalsListView(generics.ListAPIView):
     """
     List products from new arrival collections.
@@ -486,6 +511,11 @@ def search_collections(request):
 
 # Favorites and Shares Views
 
+@extend_schema(
+    tags=["Favorites"],
+    summary="Manage user favorites",
+    description="List user's favorite products or add a product to favorites"
+)
 class UserFavoriteListCreateView(generics.ListCreateAPIView):
     """
     List user's favorites or add a product to favorites.
@@ -499,6 +529,11 @@ class UserFavoriteListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
+@extend_schema(
+    tags=["Favorites"],
+    summary="Remove from favorites",
+    description="Remove a product from user's favorites"
+)
 class UserFavoriteDestroyView(generics.DestroyAPIView):
     """
     Remove a product from user's favorites.
@@ -511,6 +546,7 @@ class UserFavoriteDestroyView(generics.DestroyAPIView):
 
 @extend_schema(
     operation_id='toggle_favorite',
+    tags=['Favorites'],
     summary='Toggle product favorite status',
     description='Add or remove a product from user favorites',
     responses={
@@ -550,6 +586,11 @@ def toggle_favorite(request, product_id):
             return Response({'message': 'Product not in favorites'}, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    tags=["Sharing"],
+    summary="Create product share",
+    description="Record a product share action"
+)
 class ProductShareCreateView(generics.CreateAPIView):
     """
     Create a product share record.
@@ -598,6 +639,11 @@ def user_favorites(request):
 
 # Cart Views
 
+@extend_schema(
+    tags=["Cart"],
+    summary="Get user cart",
+    description="Retrieve user's cart with all items and details"
+)
 class CartDetailView(generics.RetrieveAPIView):
     """
     Get user's cart with all items.
@@ -609,6 +655,11 @@ class CartDetailView(generics.RetrieveAPIView):
         return cart
 
 
+@extend_schema(
+    tags=["Cart"],
+    summary="Get cart summary",
+    description="Get cart summary with total items, price, and item count"
+)
 class CartSummaryView(generics.RetrieveAPIView):
     """
     Get cart summary (total items, price, etc.).
@@ -648,6 +699,7 @@ class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 @extend_schema(
     operation_id='add_to_cart',
+    tags=['Cart'],
     summary='Add product to cart',
     description='Add a product to user cart or update quantity if already exists',
     responses={
@@ -692,6 +744,7 @@ def add_to_cart(request, product_id):
 
 @extend_schema(
     operation_id='remove_from_cart',
+    tags=['Cart'],
     summary='Remove product from cart',
     description='Remove a product from user cart',
     responses={
@@ -722,6 +775,7 @@ def remove_from_cart(request, product_id):
 
 @extend_schema(
     operation_id='update_cart_item_quantity',
+    tags=['Cart'],
     summary='Update cart item quantity',
     description='Update the quantity of a product in user cart',
     responses={
@@ -760,6 +814,7 @@ def update_cart_item_quantity(request, product_id):
 
 @extend_schema(
     operation_id='clear_cart',
+    tags=['Cart'],
     summary='Clear user cart',
     description='Remove all items from user cart',
     responses={
@@ -782,6 +837,16 @@ def clear_cart(request):
 
 # Product Relations and Recommendations
 
+@extend_schema(
+    operation_id='complete_the_look',
+    tags=['Recommendations'],
+    summary='Get complete the look products',
+    description='Get products that complete the look for a specific product',
+    responses={
+        200: {'description': 'Complete the look products'},
+        404: {'description': 'Product not found'}
+    }
+)
 @api_view(['GET'])
 def complete_the_look(request, product_id):
     """
@@ -909,6 +974,16 @@ def get_smart_recommendations(source_product):
     return similar_products
 
 
+@extend_schema(
+    operation_id='product_recommendations',
+    tags=['Recommendations'],
+    summary='Get product recommendations',
+    description='Get all types of recommendations for a product (complete the look + you may also like)',
+    responses={
+        200: {'description': 'Product recommendations'},
+        404: {'description': 'Product not found'}
+    }
+)
 @api_view(['GET'])
 def product_recommendations(request, product_id):
     """
