@@ -35,11 +35,11 @@ services:
     env_file:
       - ./.envs/.local/.postgres
 
-  # redis:
-  #   image: docker.io/redis:6
-  #   container_name: acham_local_redis
-  #   volumes:
-  #     - acham_local_redis_data:/data
+  redis:
+    image: docker.io/redis:6
+    container_name: acham_local_redis
+    volumes:
+      - acham_local_redis_data:/data
 
   celeryworker:
     <<: *django
