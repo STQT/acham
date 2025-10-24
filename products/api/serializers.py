@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem
+from ..models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem, Collection
 
 
 class CollectionSerializer(serializers.ModelSerializer):

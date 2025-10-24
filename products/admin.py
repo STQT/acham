@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem
+from .models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem, Collection
 
 
 class ProductShotInline(admin.TabularInline):
