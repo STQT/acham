@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Q
 
-from ..models import Product, ProductShot
+from ...models import Product, ProductShot
 from ..serializers import (
     ProductSerializer,
     ProductListSerializer,

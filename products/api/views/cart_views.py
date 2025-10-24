@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
-from ..models import Product, Cart, CartItem
+from ...models import Product, Cart, CartItem
 from ..serializers import (
     CartSerializer,
     CartItemSerializer,

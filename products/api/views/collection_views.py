@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 from django.db.models import Q
 
-from ..models import Product, Collection
+from ...models import Product, Collection
 from ..serializers import (
     ProductListSerializer,
     CollectionSerializer
