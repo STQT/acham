@@ -6,7 +6,7 @@ from .serializers import BannerSerializer, FAQSerializer
 
 
 @extend_schema(
-    tags=['Banners'],
+    tags=['banners'],
     summary="List all banners",
     description="Retrieve a list of all available banners."
 )
@@ -16,7 +16,7 @@ class BannerListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=['Banners'],
+    tags=['banners'],
     summary="Retrieve banner details",
     description="Retrieve detailed information about a specific banner by ID."
 )
@@ -26,7 +26,7 @@ class BannerDetailView(generics.RetrieveAPIView):
 
 
 @extend_schema(
-    tags=['FAQs'],
+    tags=['faqs'],
     summary="List all FAQs",
     description="Retrieve a list of all frequently asked questions."
 )
@@ -36,7 +36,7 @@ class FAQListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=['FAQs'],
+    tags=['faqs'],
     summary="Retrieve FAQ details",
     description="Retrieve detailed information about a specific FAQ by ID."
 )
