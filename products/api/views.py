@@ -509,6 +509,16 @@ class UserFavoriteDestroyView(generics.DestroyAPIView):
         return UserFavorite.objects.filter(user=self.request.user)
 
 
+@extend_schema(
+    operation_id='toggle_favorite',
+    summary='Toggle product favorite status',
+    description='Add or remove a product from user favorites',
+    responses={
+        200: {'description': 'Product favorite status updated'},
+        201: {'description': 'Product added to favorites'},
+        404: {'description': 'Product not found'}
+    }
+)
 @api_view(['POST', 'DELETE'])
 def toggle_favorite(request, product_id):
     """
@@ -636,6 +646,17 @@ class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
         return CartItem.objects.filter(cart=cart)
 
 
+@extend_schema(
+    operation_id='add_to_cart',
+    summary='Add product to cart',
+    description='Add a product to user cart or update quantity if already exists',
+    responses={
+        201: {'description': 'Product added to cart'},
+        200: {'description': 'Product quantity updated in cart'},
+        404: {'description': 'Product not found'},
+        400: {'description': 'Invalid request data'}
+    }
+)
 @api_view(['POST'])
 def add_to_cart(request, product_id):
     """
@@ -669,6 +690,15 @@ def add_to_cart(request, product_id):
     return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
+@extend_schema(
+    operation_id='remove_from_cart',
+    summary='Remove product from cart',
+    description='Remove a product from user cart',
+    responses={
+        200: {'description': 'Product removed from cart'},
+        404: {'description': 'Product or cart not found'}
+    }
+)
 @api_view(['DELETE'])
 def remove_from_cart(request, product_id):
     """
@@ -690,6 +720,16 @@ def remove_from_cart(request, product_id):
         return Response({'error': 'Product not in cart'}, status=status.HTTP_404_NOT_FOUND)
 
 
+@extend_schema(
+    operation_id='update_cart_item_quantity',
+    summary='Update cart item quantity',
+    description='Update the quantity of a product in user cart',
+    responses={
+        200: {'description': 'Cart item quantity updated'},
+        404: {'description': 'Product or cart not found'},
+        400: {'description': 'Invalid quantity'}
+    }
+)
 @api_view(['PUT'])
 def update_cart_item_quantity(request, product_id):
     """
@@ -718,6 +758,15 @@ def update_cart_item_quantity(request, product_id):
         return Response({'error': 'Product not in cart'}, status=status.HTTP_404_NOT_FOUND)
 
 
+@extend_schema(
+    operation_id='clear_cart',
+    summary='Clear user cart',
+    description='Remove all items from user cart',
+    responses={
+        200: {'description': 'Cart cleared successfully'},
+        404: {'description': 'Cart not found'}
+    }
+)
 @api_view(['DELETE'])
 def clear_cart(request):
     """

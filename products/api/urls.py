@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 
-app_name = 'products_api'
+# app_name removed to prevent namespace collision
 
 urlpatterns = [
     # 🛍️ PRODUCT MANAGEMENT

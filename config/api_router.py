@@ -12,29 +12,8 @@ router.register("users", UserViewSet)
 
 app_name = "api"
 urlpatterns = router.urls + [
-    # 🛍️ PRODUCT MANAGEMENT
+    # 🛍️ PRODUCTS (All product-related endpoints under /api/products/)
     path("products/", include("products.api.urls")),
-    
-    # 🖼️ PRODUCT SHOTS
-    path("product-shots/", include("products.api.urls")),
-    
-    # 📦 COLLECTIONS
-    path("collections/", include("products.api.urls")),
-    
-    # 🆕 NEW ARRIVALS
-    path("new-arrivals/", include("products.api.urls")),
-    
-    # ❤️ FAVORITES
-    path("favorites/", include("products.api.urls")),
-    
-    # 📤 SHARING
-    path("shares/", include("products.api.urls")),
-    
-    # 🛒 CART
-    path("cart/", include("products.api.urls")),
-    
-    # 🔗 RECOMMENDATIONS
-    path("recommendations/", include("products.api.urls")),
     
     # 🎯 BANNER
     path("banner/", include("banner.api.urls")),
