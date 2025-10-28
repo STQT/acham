@@ -17,4 +17,7 @@ urlpatterns = router.urls + [
     
     # 🎯 BANNER
     path("banner/", include("acham.banner.api.urls")),
+    
+    # 👤 USERS (All user-related endpoints under /api/users/)
+    path("users/", include("acham.users.api.urls")),
 ]

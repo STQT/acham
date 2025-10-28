@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from .forms import UserAdminChangeForm
 from .forms import UserAdminCreationForm
-from .models import User
+from .models import User, Country
 
 if settings.DJANGO_ADMIN_FORCE_ALLAUTH:
     # Force the `admin` sign in process to go through the `django-allauth` workflow:
@@ -21,7 +21,8 @@ class UserAdmin(auth_admin.UserAdmin):
     add_form = UserAdminCreationForm
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        (_("Personal info"), {"fields": ("name",)}),
+        (_("Personal info"), {"fields": ("name", "phone", "country")}),
+        (_("Phone Verification"), {"fields": ("phone_verified", "otp_code", "otp_expires_at")}),
         (
             _("Permissions"),
             {
@@ -36,8 +37,8 @@ class UserAdmin(auth_admin.UserAdmin):
         ),
         (_("Important dates"), {"fields": ("last_login", "date_joined")}),
     )
-    list_display = ["email", "name", "is_superuser"]
-    search_fields = ["name"]
+    list_display = ["email", "name", "country", "phone_verified", "is_superuser"]
+    search_fields = ["name", "email", "phone"]
     ordering = ["id"]
     add_fieldsets = (
         (
@@ -48,3 +49,10 @@ class UserAdmin(auth_admin.UserAdmin):
             },
         ),
     )
+
+
+@admin.register(Country)
+class CountryAdmin(admin.ModelAdmin):
+    list_display = ["name", "code", "phone_code", "requires_phone_verification"]
+    search_fields = ["name", "code"]
+    list_filter = ["requires_phone_verification"]

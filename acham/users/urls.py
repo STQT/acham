@@ -1,12 +1,10 @@
 from django.urls import path
 
-from .views import user_detail_view
-from .views import user_redirect_view
-from .views import user_update_view
+# All user functionality is now handled through API endpoints
+# See acham/users/api/urls.py for the API endpoints
 
 app_name = "users"
 urlpatterns = [
-    path("~redirect/", view=user_redirect_view, name="redirect"),
-    path("~update/", view=user_update_view, name="update"),
-    path("<int:pk>/", view=user_detail_view, name="detail"),
+    # All user-related URLs are now in the API
+    # See config/api_router.py for the API routing
 ]
