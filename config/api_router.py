@@ -13,8 +13,8 @@ router.register("users", UserViewSet)
 app_name = "api"
 urlpatterns = router.urls + [
     # 🛍️ PRODUCTS (All product-related endpoints under /api/products/)
-    path("products/", include("products.api.urls")),
+    path("products/", include("acham.products.api.urls")),
     
     # 🎯 BANNER
-    path("banner/", include("banner.api.urls")),
+    path("banner/", include("acham.banner.api.urls")),
 ]

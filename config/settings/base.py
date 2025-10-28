@@ -93,8 +93,8 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "acham.users",
-    "products",
-    "banner",
+    "acham.products",
+    "acham.banner",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

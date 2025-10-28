@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
-class BannerConfig(AppConfig):
+class ProductsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'banner'
+    name = 'acham.products'
+    verbose_name = 'Products'
