@@ -6,7 +6,10 @@ from .views import (
     CountryListView,
     UserRegistrationView,
     OTPVerificationView,
-    ResendOTPView
+    ResendOTPView,
+    ProfileMeViewSet,
+    ChangePasswordView,
+    JwtLogoutView
 )
 
 router = DefaultRouter()
@@ -17,13 +20,14 @@ urlpatterns = [
     # Country endpoints
     path("countries/", CountryListView.as_view(), name="country-list"),
     
-    # Registration endpoints
+    # Registration/end-user endpoints
     path("register/", UserRegistrationView.as_view(), name="user-registration"),
-    
-    # OTP endpoints
     path("verify-otp/<int:user_id>/", OTPVerificationView.as_view(), name="otp-verification"),
     path("resend-otp/", ResendOTPView.as_view(), name="resend-otp"),
-    
+    # Profile
+    path("me/", ProfileMeViewSet.as_view(), name="profile-me"),
+    path("change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path("logout/", JwtLogoutView.as_view(), name="logout"),
     # Include router URLs
     *router.urls,
 ]

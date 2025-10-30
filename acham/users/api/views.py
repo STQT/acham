@@ -9,6 +9,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import login
 from django.contrib.auth import get_user_model
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import update_session_auth_hash
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 from acham.users.models import User, Country
 from acham.users.otp_service import OTPService
@@ -18,7 +21,9 @@ from .serializers import (
     UserRegistrationSerializer, 
     CountrySerializer,
     OTPVerificationSerializer,
-    ResendOTPSerializer
+    ResendOTPSerializer,
+    UserProfileSerializer,
+    ChangePasswordSerializer
 )
 
 User = get_user_model()
@@ -120,3 +125,69 @@ class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericV
     def me(self, request):
         serializer = UserSerializer(request.user, context={"request": request})
         return Response(status=status.HTTP_200_OK, data=serializer.data)
+
+
+class ProfileMeViewSet(APIView):
+    """
+    API endpoint to retrieve, update, or delete current user's profile.
+    Methods:
+    GET    /api/users/me/
+    PATCH  /api/users/me/
+    DELETE /api/users/me/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserProfileSerializer(request.user, context={"request": request})
+        return Response(serializer.data)
+
+    def patch(self, request):
+        serializer = UserProfileSerializer(request.user, data=request.data, partial=True, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(UserProfileSerializer(user, context={"request": request}).data)
+
+    def delete(self, request):
+        user = request.user
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangePasswordView(APIView):
+    """
+    Change password endpoint
+    POST /api/users/change-password/
+    Body: old_password, new_password1, new_password2
+    Returns: 200 on success, 400 on validation error
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        update_session_auth_hash(request, request.user)  # Keeps session active if you want; optionally force logout
+        return Response({"message": "Password updated successfully"}, status=status.HTTP_200_OK)
+
+
+class JwtLogoutView(APIView):
+    """
+    JWT Logout endpoint (invalidate refresh token).
+    POST /api/users/logout/
+    Body: {"refresh": "<refresh_token>"}
+    Returns 200 always.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.data.get('refresh', None)
+        if not refresh_token:
+            return Response({"detail": "No token provided"}, status=status.HTTP_200_OK)
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            pass  # Token was already invalid or blacklisted
+        except Exception:
+            pass
+        return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
