@@ -1,23 +1,12 @@
 from django.conf import settings
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
-from rest_framework.routers import SimpleRouter
-
-from acham.users.api.views import UserViewSet
-
-router = DefaultRouter() if settings.DEBUG else SimpleRouter()
-
-# User Management
-router.register("users", UserViewSet)
 
 app_name = "api"
-urlpatterns = router.urls + [
+urlpatterns = [
     # 🛍️ PRODUCTS (All product-related endpoints under /api/products/)
     path("products/", include("acham.products.api.urls")),
-    
     # 🎯 BANNER
     path("banner/", include("acham.banner.api.urls")),
-    
-    # 👤 USERS (All user-related endpoints under /api/users/)
+    # 👤 USERS (all user/api endpoints under /api/users/ by manual routes, no DRF router!)
     path("users/", include("acham.users.api.urls")),
 ]
