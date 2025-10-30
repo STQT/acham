@@ -56,12 +56,13 @@ class User(AbstractUser):
     otp_expires_at = models.DateTimeField(_("OTP Expires At"), null=True, blank=True)
     username = None  # type: ignore[assignment]
     # Standard Django user names
-    first_name = CharField(_("first name"), max_length=150, blank=False)
-    last_name = CharField(_("last name"), max_length=150, blank=False)
+    first_name = CharField(_("first name"), max_length=150,null=True, blank=False)
+    last_name = CharField(_("last name"), max_length=150,null=True, blank=False)
     gender = CharField(
         _("Gender"),
         max_length=6,
         choices=[('male', 'Male'), ('female', 'Female')],
+        null=True,
         blank=False,
     )
 

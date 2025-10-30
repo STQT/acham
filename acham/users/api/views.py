@@ -25,6 +25,7 @@ from .serializers import (
     UserProfileSerializer,
     ChangePasswordSerializer
 )
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 User = get_user_model()
 
@@ -33,6 +34,7 @@ class CountryListView(APIView):
     """API endpoint to get list of available countries."""
     permission_classes = [AllowAny]
     
+    @extend_schema(responses={200: CountrySerializer(many=True)})
     def get(self, request):
         countries = Country.objects.all().order_by('name')
         serializer = CountrySerializer(countries, many=True)
@@ -43,6 +45,7 @@ class UserRegistrationView(APIView):
     """API endpoint for user registration with country selection."""
     permission_classes = [AllowAny]
     
+    @extend_schema(request=UserRegistrationSerializer, responses={201: UserSerializer, 400: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
@@ -69,6 +72,7 @@ class OTPVerificationView(APIView):
     """API endpoint for OTP verification."""
     permission_classes = [AllowAny]
     
+    @extend_schema(request=OTPVerificationSerializer, responses={200: UserSerializer, 400: OpenApiTypes.OBJECT})
     def post(self, request, user_id):
         data = request.data.copy()
         data['user_id'] = user_id
@@ -94,6 +98,7 @@ class ResendOTPView(APIView):
     """API endpoint for resending OTP."""
     permission_classes = [AllowAny]
     
+    @extend_schema(request=ResendOTPSerializer, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = ResendOTPSerializer(data=request.data)
         if serializer.is_valid():
@@ -137,16 +142,19 @@ class ProfileMeViewSet(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: UserProfileSerializer})
     def get(self, request):
         serializer = UserProfileSerializer(request.user, context={"request": request})
         return Response(serializer.data)
 
+    @extend_schema(request=UserProfileSerializer, responses={200: UserProfileSerializer})
     def patch(self, request):
         serializer = UserProfileSerializer(request.user, data=request.data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(UserProfileSerializer(user, context={"request": request}).data)
 
+    @extend_schema(request=None, responses={204: None})
     def delete(self, request):
         user = request.user
         user.delete()
@@ -162,6 +170,7 @@ class ChangePasswordView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=ChangePasswordSerializer, responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
@@ -179,6 +188,7 @@ class JwtLogoutView(APIView):
     """
     permission_classes = [AllowAny]
 
+    @extend_schema(request=None, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         refresh_token = request.data.get('refresh', None)
         if not refresh_token:

@@ -22,7 +22,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
-    def get_product_count(self, obj):
+    def get_product_count(self, obj) -> int:
         """Get the number of available products in this collection."""
         return obj.products.filter(is_available=True).count()
 
@@ -86,18 +86,18 @@ class ProductSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
-    def get_is_favorited(self, obj):
+    def get_is_favorited(self, obj) -> bool:
         """Check if the current user has favorited this product."""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             return UserFavorite.objects.filter(user=request.user, product=obj).exists()
         return False
     
-    def get_favorite_count(self, obj):
+    def get_favorite_count(self, obj) -> int:
         """Get the number of users who favorited this product."""
         return obj.favorited_by.count()
     
-    def get_share_count(self, obj):
+    def get_share_count(self, obj) -> int:
         """Get the number of times this product was shared."""
         return obj.shares.count()
     
@@ -223,7 +223,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     """Serializer for CartItem model."""
     
     product = ProductListSerializer(read_only=True)
-    total_price = serializers.ReadOnlyField()
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     
     class Meta:
         model = CartItem
@@ -256,9 +256,9 @@ class CartSerializer(serializers.ModelSerializer):
     """Serializer for Cart model."""
     
     items = CartItemSerializer(many=True, read_only=True)
-    total_items = serializers.ReadOnlyField()
-    total_price = serializers.ReadOnlyField()
-    item_count = serializers.ReadOnlyField()
+    total_items = serializers.IntegerField(read_only=True)
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    item_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Cart
@@ -278,9 +278,9 @@ class CartSerializer(serializers.ModelSerializer):
 class CartSummarySerializer(serializers.ModelSerializer):
     """Simplified cart serializer for quick overview."""
     
-    total_items = serializers.ReadOnlyField()
-    total_price = serializers.ReadOnlyField()
-    item_count = serializers.ReadOnlyField()
+    total_items = serializers.IntegerField(read_only=True)
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    item_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Cart
@@ -298,3 +298,10 @@ class ProductCompleteDetailsSerializer(serializers.Serializer):
     product = ProductSerializer()
     shots = ProductShotSerializer(many=True)
     metadata = serializers.DictField()
+
+
+class ProductShareStatsSerializer(serializers.Serializer):
+    """Serializer for product share statistics response."""
+    product_id = serializers.IntegerField()
+    total_shares = serializers.IntegerField()
+    platform_stats = serializers.DictField(child=serializers.IntegerField())

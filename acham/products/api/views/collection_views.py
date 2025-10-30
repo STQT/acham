@@ -13,7 +13,7 @@ from ..serializers import (
 
 @extend_schema(
     operation_id='products_collection_list',
-    tags=['Collections'],
+    tags=['collections'],
     summary='List collections',
     description='Get all active collections.',
     responses={200: CollectionSerializer(many=True)}
@@ -29,7 +29,7 @@ class CollectionListView(generics.ListAPIView):
 
 @extend_schema(
     operation_id='products_collection_detail',
-    tags=['Collections'],
+    tags=['collections'],
     summary='Get collection details',
     description='Retrieve details of a specific collection.',
     responses={200: CollectionSerializer}
@@ -42,6 +42,11 @@ class CollectionDetailView(generics.RetrieveAPIView):
     serializer_class = CollectionSerializer
 
 
+@extend_schema(
+    tags=["products"],
+    summary="List products in collection",
+    description="List products within a specific collection with search and ordering"
+)
 class CollectionProductsView(generics.ListAPIView):
     """
     List products within a specific collection with search and filtering.
@@ -72,7 +77,7 @@ class CollectionProductsView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["New Arrivals"],
+    tags=["new arrivals"],
     summary="List new arrival products",
     description="Get products from collections marked as new arrivals"
 )
@@ -96,7 +101,7 @@ class NewArrivalsListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["Collections"],
+    tags=["collections"],
     summary="Get collection page data",
     description="Get complete collection page with products and search options"
 )
@@ -143,7 +148,7 @@ def collection_page(request, collection_id):
 
 
 @extend_schema(
-    tags=["Collections"],
+    tags=["collections"],
     summary="Search collections",
     description="Search collections by name"
 )
@@ -172,7 +177,7 @@ def search_collections(request):
 
 
 @extend_schema(
-    tags=["New Arrivals"],
+    tags=["new arrivals"],
     summary="Get new arrival collections",
     description="Get collections marked as new arrivals"
 )
@@ -195,7 +200,7 @@ def new_arrivals_collections(request):
 
 
 @extend_schema(
-    tags=["New Arrivals"],
+    tags=["new arrivals"],
     summary="Get new arrivals page data",
     description="Get complete new arrivals page with collections and products"
 )

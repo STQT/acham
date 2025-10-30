@@ -36,9 +36,6 @@ urlpatterns = [
     path('cart/items/', CartItemListCreateView.as_view(), name='cart-item-list-create'),
     path('cart/items/<int:pk>/', CartItemDetailView.as_view(), name='cart-item-detail'),
     path('cart/clear/', clear_cart, name='clear-cart'),
-    path('<int:product_id>/add-to-cart/', add_to_cart, name='add-to-cart'),
-    path('<int:product_id>/remove-from-cart/', remove_from_cart, name='remove-from-cart'),
-    path('<int:product_id>/update-cart-quantity/', update_cart_item_quantity, name='update-cart-quantity'),
 
     # 🔗 RECOMMENDATIONS
     path('<int:product_id>/complete-the-look/', complete_the_look, name='complete-the-look'),
