@@ -12,7 +12,7 @@ from ..serializers import (
 
 
 @extend_schema(
-    tags=["Favorites"],
+    tags=["favorites"],
     summary="Manage user favorites",
     description="List user's favorite products or add a product to favorites"
 )
@@ -30,7 +30,7 @@ class UserFavoriteListCreateView(generics.ListCreateAPIView):
 
 
 @extend_schema(
-    tags=["Favorites"],
+    tags=["favorites"],
     summary="Remove from favorites",
     description="Remove a product from user's favorites"
 )
@@ -45,13 +45,27 @@ class UserFavoriteDestroyView(generics.DestroyAPIView):
 
 
 @extend_schema(
-    operation_id='toggle_favorite',
-    tags=['Favorites'],
-    summary='Toggle product favorite status',
-    description='Add or remove a product from user favorites',
+    methods=['POST'],
+    operation_id='toggle_favorite_add',
+    tags=['favorites'],
+    summary='Add product to favorites',
+    description='Add a product to user favorites',
+    request=None,
     responses={
-        200: {'description': 'Product favorite status updated'},
         201: {'description': 'Product added to favorites'},
+        200: {'description': 'Product already in favorites'},
+        404: {'description': 'Product not found'}
+    }
+)
+@extend_schema(
+    methods=['DELETE'],
+    operation_id='toggle_favorite_remove',
+    tags=['favorites'],
+    summary='Remove product from favorites',
+    description='Remove a product from user favorites',
+    request=None,
+    responses={
+        200: {'description': 'Product removed from favorites'},
         404: {'description': 'Product not found'}
     }
 )
@@ -87,9 +101,11 @@ def toggle_favorite(request, product_id):
 
 
 @extend_schema(
-    tags=["Sharing"],
+    tags=["sharing"],
     summary="Create product share",
-    description="Record a product share action"
+    description="Record a product share action",
+    request=ProductShareCreateSerializer,
+    responses={201: ProductShareSerializer}
 )
 class ProductShareCreateView(generics.CreateAPIView):
     """
@@ -101,10 +117,13 @@ class ProductShareCreateView(generics.CreateAPIView):
         serializer.save(user=self.request.user if self.request.user.is_authenticated else None)
 
 
+from ..serializers import ProductShareStatsSerializer
+
 @extend_schema(
-    tags=["Sharing"],
+    tags=["sharing"],
     summary="Get share statistics",
-    description="Get sharing statistics for a product"
+    description="Get sharing statistics for a product",
+    responses={200: ProductShareStatsSerializer}
 )
 @api_view(['GET'])
 def product_share_stats(request, product_id):
@@ -133,9 +152,10 @@ def product_share_stats(request, product_id):
 
 
 @extend_schema(
-    tags=["Favorites"],
+    tags=["favorites"],
     summary="Get user favorites",
-    description="Get current user's favorite products"
+    description="Get current user's favorite products",
+    responses={200: UserFavoriteSerializer(many=True)}
 )
 @api_view(['GET'])
 def user_favorites(request):

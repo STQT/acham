@@ -10,7 +10,7 @@ from ..serializers import ProductListSerializer
 
 @extend_schema(
     operation_id='complete_the_look',
-    tags=['Recommendations'],
+    tags=['recommendations'],
     summary='Get complete the look products',
     description='Get products that complete the look for a specific product',
     responses={
@@ -51,7 +51,7 @@ def complete_the_look(request, product_id):
 
 @extend_schema(
     operation_id='product_recommendations',
-    tags=['Recommendations'],
+    tags=['recommendations'],
     summary='Get product recommendations',
     description='Get all types of recommendations for a product (complete the look + you may also like)',
     responses={

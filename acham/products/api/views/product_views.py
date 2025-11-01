@@ -15,7 +15,7 @@ from ..serializers import (
 
 
 @extend_schema(
-    tags=["Products"],
+    tags=["products"],
     summary="List all products",
     description="Get a paginated list of all products with filtering and search capabilities"
 )
@@ -63,7 +63,7 @@ class ProductListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["Products"],
+    tags=["products"],
     summary="Get product details",
     description="Retrieve detailed information about a specific product"
 )
@@ -76,7 +76,7 @@ class ProductDetailView(generics.RetrieveAPIView):
 
 
 @extend_schema(
-    tags=["Product Shots"],
+    tags=["product shots"],
     summary="List product shots",
     description="Get all images/shots for a specific product"
 )
@@ -95,7 +95,7 @@ class ProductShotListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["Product Shots"],
+    tags=["product shots"],
     summary="Get product shot details",
     description="Retrieve detailed information about a specific product shot"
 )
@@ -112,7 +112,7 @@ class ProductShotDetailView(generics.RetrieveAPIView):
 
 @extend_schema(
     operation_id='products_product_search',
-    tags=['Products'],
+    tags=['products'],
     summary='Advanced product search',
     description='Search products with multiple filters including text, type, size, color, and price range.',
     responses={200: ProductListSerializer(many=True)},
@@ -183,7 +183,7 @@ def product_search(request):
 
 @extend_schema(
     operation_id='products_product_types',
-    tags=['Products'],
+    tags=['products'],
     summary='Get product types',
     description='Get available product types and their choices.',
     responses={200: ChoiceItemSerializer(many=True)}
@@ -199,7 +199,7 @@ def product_types(request):
 
 @extend_schema(
     operation_id='products_product_sizes',
-    tags=['Products'],
+    tags=['products'],
     summary='Get product sizes',
     description='Get available product sizes and their choices.',
     responses={200: ChoiceItemSerializer(many=True)}
@@ -215,7 +215,7 @@ def product_sizes(request):
 
 @extend_schema(
     operation_id='products_product_complete_details',
-    tags=['Products'],
+    tags=['products'],
     summary='Get complete product details',
     description='Get comprehensive product information including all shots, available types, sizes, and search options.',
     responses={200: ProductCompleteDetailsSerializer}

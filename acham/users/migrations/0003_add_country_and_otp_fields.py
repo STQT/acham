@@ -29,7 +29,7 @@ def reverse_create_countries(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('users', '0002_user_phone'),  # Adjust this to match your latest migration
+        ('users', '0004_country_user_otp_code_user_otp_expires_at_and_more'),
     ]
 
     operations = [

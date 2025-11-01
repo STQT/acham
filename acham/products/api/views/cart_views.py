@@ -13,7 +13,7 @@ from ..serializers import (
 
 
 @extend_schema(
-    tags=["Cart"],
+    tags=["cart"],
     summary="Get user cart",
     description="Retrieve user's cart with all items and details"
 )
@@ -29,7 +29,7 @@ class CartDetailView(generics.RetrieveAPIView):
 
 
 @extend_schema(
-    tags=["Cart"],
+    tags=["cart"],
     summary="Get cart summary",
     description="Get cart summary with total items, price, and item count"
 )
@@ -45,7 +45,7 @@ class CartSummaryView(generics.RetrieveAPIView):
 
 
 @extend_schema(
-    tags=["Cart"],
+    tags=["cart"],
     summary="Manage cart items",
     description="List cart items or add item to cart"
 )
@@ -65,7 +65,7 @@ class CartItemListCreateView(generics.ListCreateAPIView):
 
 
 @extend_schema(
-    tags=["Cart"],
+    tags=["cart"],
     summary="Manage cart item",
     description="Retrieve, update, or remove cart item"
 )
@@ -85,9 +85,10 @@ class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     tags=['Cart'],
     summary='Add product to cart',
     description='Add a product to user cart or update quantity if already exists',
+    request=CartItemCreateUpdateSerializer,
     responses={
-        201: {'description': 'Product added to cart'},
-        200: {'description': 'Product quantity updated in cart'},
+        201: CartItemSerializer,
+        200: CartItemSerializer,
         404: {'description': 'Product not found'},
         400: {'description': 'Invalid request data'}
     }
@@ -129,6 +130,7 @@ def add_to_cart(request, product_id):
     tags=['Cart'],
     summary='Remove product from cart',
     description='Remove a product from user cart',
+    request=None,
     responses={
         200: {'description': 'Product removed from cart'},
         404: {'description': 'Product or cart not found'}
@@ -160,8 +162,9 @@ def remove_from_cart(request, product_id):
     tags=['Cart'],
     summary='Update cart item quantity',
     description='Update the quantity of a product in user cart',
+    request=CartItemCreateUpdateSerializer,
     responses={
-        200: {'description': 'Cart item quantity updated'},
+        200: CartItemSerializer,
         404: {'description': 'Product or cart not found'},
         400: {'description': 'Invalid quantity'}
     }
@@ -195,16 +198,18 @@ def update_cart_item_quantity(request, product_id):
 
 
 @extend_schema(
+    methods=['POST'],
     operation_id='clear_cart',
-    tags=['Cart'],
+    tags=['cart'],
     summary='Clear user cart',
     description='Remove all items from user cart',
+    request=None,
     responses={
         200: {'description': 'Cart cleared successfully'},
         404: {'description': 'Cart not found'}
     }
 )
-@api_view(['DELETE'])
+@api_view(['POST'])
 def clear_cart(request):
     """
     Remove all items from cart.

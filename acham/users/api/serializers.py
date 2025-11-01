@@ -128,7 +128,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ["id", "name", "email", "phone", "country", "phone_verified", "url"]
+        fields = ["id", "first_name", "email", "phone", "country", "phone_verified", "url"]
         extra_kwargs = {
             "url": {"view_name": "api:user-detail", "lookup_field": "pk"},
         }
