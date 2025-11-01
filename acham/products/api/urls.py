@@ -20,10 +20,8 @@ urlpatterns = [
     # 🆕 NEW ARRIVALS (Lean)
     path('new-arrivals/', NewArrivalsListView.as_view(), name='new-arrivals-list'),
 
-    # ❤️ FAVORITES
+    # ❤️ FAVORITES (Lean - no duplications)
     path('favorites/', user_favorites, name='user-favorites'),
-    path('favorites/manage/', UserFavoriteListCreateView.as_view(), name='favorite-list-create'),
-    path('favorites/<int:pk>/', UserFavoriteDestroyView.as_view(), name='favorite-destroy'),
     path('<int:product_id>/favorite/', toggle_favorite, name='toggle-favorite'),
 
     # 📤 SHARING
