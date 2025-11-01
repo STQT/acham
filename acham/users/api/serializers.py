@@ -1,32 +1,26 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
+from django_countries import countries
 
-from acham.users.models import User, Country
+from acham.users.models import User
 from acham.users.otp_service import OTPService
 
 User = get_user_model()
 
 
-class CountrySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Country
-        fields = ['id', 'name', 'code', 'phone_code', 'requires_phone_verification']
-
-
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
-    country = CountrySerializer(read_only=True)
-    country_id = serializers.IntegerField(write_only=True)
+    country = serializers.CharField(max_length=2, write_only=True, required=True)
+    country_display = serializers.CharField(source='country.name', read_only=True)
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     gender = serializers.ChoiceField(choices=[('male', 'Male'), ('female', 'Female')])
 
     class Meta:
         model = User
-        fields = ['email', 'password1', 'password2', 'first_name', 'last_name', 'gender', 'phone', 'country', 'country_id']
+        fields = ['email', 'password1', 'password2', 'first_name', 'last_name', 'gender', 'phone', 'country', 'country_display']
         extra_kwargs = {
             'email': {'required': True},
             'first_name': {'required': True},
@@ -39,41 +33,39 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validate_password(value)
         return value
 
+    def validate_country(self, value):
+        """Validate country code."""
+        if value not in countries:
+            raise serializers.ValidationError("Invalid country code")
+        return value
+
     def validate(self, attrs):
         if attrs['password1'] != attrs['password2']:
             raise serializers.ValidationError("Passwords don't match")
+        
+        # Validate phone for Uzbekistan
+        country_code = attrs.get('country', '')
+        if country_code == 'UZ' and not attrs.get('phone'):
+            raise serializers.ValidationError({"phone": "Phone number is required for Uzbekistan"})
+        
         return attrs
 
-    def validate_phone(self, value):
-        country_id = self.initial_data.get('country_id')
-        if country_id:
-            try:
-                country = Country.objects.get(id=country_id)
-                if country.code == 'UZ' and not value:
-                    raise serializers.ValidationError("Phone number is required for Uzbekistan")
-            except Country.DoesNotExist:
-                pass
-        return value
-
     def create(self, validated_data):
-        country_id = validated_data.pop('country_id')
         password = validated_data.pop('password1')
         validated_data.pop('password2')
-        try:
-            country = Country.objects.get(id=country_id)
-        except Country.DoesNotExist:
-            raise serializers.ValidationError("Invalid country selected")
+        
         user = User.objects.create_user(
             password=password,
-            country=country,
             **validated_data
         )
+        
         # Send OTP for Uzbekistan users
-        if country.code == 'UZ' and user.phone:
+        if user.country and str(user.country) == 'UZ' and user.phone:
             try:
                 OTPService.send_otp_to_user(user)
             except Exception:
                 pass
+        
         return user
 
 
@@ -113,7 +105,7 @@ class ResendOTPSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found")
         
-        if not user.country or user.country.code != 'UZ':
+        if not user.country or str(user.country) != 'UZ':
             raise serializers.ValidationError("OTP verification is only available for Uzbekistan users")
         
         if not user.phone:
@@ -124,32 +116,40 @@ class ResendOTPSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    country = CountrySerializer(read_only=True)
+    country = serializers.CharField(source='country.code', read_only=True)
+    country_display = serializers.CharField(source='country.name', read_only=True)
     
     class Meta:
         model = User
-        fields = ["id", "first_name", "email", "phone", "country", "phone_verified", "url"]
+        fields = ["id", "first_name", "last_name", "email", "phone", "country", "country_display", "phone_verified", "url"]
         extra_kwargs = {
             "url": {"view_name": "api:user-detail", "lookup_field": "pk"},
         }
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    country = CountrySerializer(read_only=True)
-    country_id = serializers.PrimaryKeyRelatedField(queryset=Country.objects.all(), source='country', write_only=True, required=False)
+    country = serializers.CharField(source='country.code', read_only=True)
+    country_display = serializers.CharField(source='country.name', read_only=True)
+    country_code = serializers.CharField(write_only=True, required=False, max_length=2)
     gender = serializers.ChoiceField(choices=[('male', 'Male'), ('female', 'Female')], required=True)
 
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "gender", "email", "phone", "country", "country_id", "phone_verified", "url"]
-        read_only_fields = ['id', 'phone_verified', 'url', 'country']
+        fields = ["id", "first_name", "last_name", "gender", "email", "phone", "country", "country_display", "country_code", "phone_verified", "url"]
+        read_only_fields = ['id', 'phone_verified', 'url', 'country', 'country_display']
+
+    def validate_country_code(self, value):
+        """Validate country code."""
+        if value and value not in countries:
+            raise serializers.ValidationError("Invalid country code")
+        return value
 
     def update(self, instance, validated_data):
-        country = validated_data.pop('country', None)
+        country_code = validated_data.pop('country_code', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        if country is not None:
-            instance.country = country
+        if country_code is not None:
+            instance.country = country_code
         instance.save()
         return instance
 

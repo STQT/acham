@@ -13,13 +13,14 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import update_session_auth_hash
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
-from acham.users.models import User, Country
+from django_countries import countries as django_countries
+
+from acham.users.models import User
 from acham.users.otp_service import OTPService
 
 from .serializers import (
     UserSerializer, 
     UserRegistrationSerializer, 
-    CountrySerializer,
     OTPVerificationSerializer,
     ResendOTPSerializer,
     UserProfileSerializer,
@@ -31,14 +32,24 @@ User = get_user_model()
 
 
 class CountryListView(APIView):
-    """API endpoint to get list of available countries."""
+    """API endpoint to get list of available countries using django-countries."""
     permission_classes = [AllowAny]
     
-    @extend_schema(responses={200: CountrySerializer(many=True)})
+    @extend_schema(responses={200: {'type': 'array', 'items': {'type': 'object'}}}}})
     def get(self, request):
-        countries = Country.objects.all().order_by('name')
-        serializer = CountrySerializer(countries, many=True)
-        return Response(serializer.data)
+        """
+        Returns list of all countries with code, name, and phone verification requirement.
+        Uzbekistan (UZ) requires phone verification.
+        """
+        country_list = []
+        for code, name in django_countries:
+            country_list.append({
+                'code': code,
+                'name': name,
+                'requires_phone_verification': code == 'UZ'  # Only UZ requires phone
+            })
+        
+        return Response(country_list)
 
 
 class UserRegistrationView(APIView):
@@ -56,10 +67,10 @@ class UserRegistrationView(APIView):
             response_data = {
                 'user': user_serializer.data,
                 'message': 'User registered successfully',
-                'requires_otp': user.country.code == 'UZ' if user.country else False
+                'requires_otp': str(user.country) == 'UZ' if user.country else False
             }
             
-            if user.country and user.country.code == 'UZ':
+            if user.country and str(user.country) == 'UZ':
                 response_data['message'] = 'User registered successfully. OTP sent to your phone number.'
                 response_data['otp_verification_url'] = f'/api/users/verify-otp/{user.id}/'
             

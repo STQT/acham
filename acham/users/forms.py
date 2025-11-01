@@ -8,7 +8,10 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 
-from .models import User, Country
+from django_countries.fields import CountryField
+from django_countries import countries
+
+from .models import User
 from .otp_service import OTPService
 
 
@@ -40,11 +43,10 @@ class UserSignupForm(SignupForm):
     Check UserSocialSignupForm for accounts created from social.
     """
     
-    country = ModelChoiceField(
-        queryset=Country.objects.all(),
-        empty_label=_("Select your country"),
+    country = CountryField().formfield(
         required=True,
-        label=_("Country")
+        label=_("Country"),
+        empty_label=_("Select your country")
     )
     phone = CharField(
         max_length=20,
@@ -61,10 +63,10 @@ class UserSignupForm(SignupForm):
     
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
-        country = self.cleaned_data.get('country')
+        country_code = self.cleaned_data.get('country')
         
         # Only require phone for Uzbekistan
-        if country and country.code == 'UZ' and not phone:
+        if country_code and str(country_code) == 'UZ' and not phone:
             raise forms.ValidationError(_("Phone number is required for Uzbekistan."))
         
         return phone
@@ -76,13 +78,13 @@ class UserSignupForm(SignupForm):
         user.save()
         
         # Send OTP for Uzbekistan users
-        if user.country and user.country.code == 'UZ' and user.phone:
+        if user.country and str(user.country) == 'UZ' and user.phone:
             try:
                 OTPService.send_otp_to_user(user)
                 # Redirect to OTP verification page
                 from django.http import HttpResponseRedirect
                 return HttpResponseRedirect(reverse('users:otp_verification', kwargs={'user_id': user.id}))
-            except Exception as e:
+            except Exception:
                 # If OTP sending fails, still create the user but mark as not verified
                 pass
         

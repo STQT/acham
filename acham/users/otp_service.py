@@ -46,7 +46,7 @@ class OTPService:
             raise ValidationError("User has no phone number")
         
         # Only send OTP for Uzbekistan users
-        if not user.country or user.country.code != 'UZ':
+        if not user.country or str(user.country) != 'UZ':
             raise ValidationError("OTP verification is only available for Uzbekistan users")
         
         otp_code = OTPService.generate_otp()
