@@ -10,25 +10,25 @@ if TYPE_CHECKING:
 class UserManager(DjangoUserManager["User"]):
     """Custom manager for the User model."""
 
-    def _create_user(self, email: str, password: str | None, **extra_fields):
-        """
-        Create and save a user with the given email and password.
-        """
-        if not email:
-            msg = "The given email must be set"
+    def _create_user(self, email: str | None, password: str | None, **extra_fields):
+        """Create and save a user with the given credentials."""
+        email_normalized = self.normalize_email(email) if email else None
+
+        if not email_normalized and not extra_fields.get("phone"):
+            msg = "Either email or phone must be provided."
             raise ValueError(msg)
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+
+        user = self.model(email=email_normalized, **extra_fields)
         user.password = make_password(password)
         user.save(using=self._db)
         return user
 
-    def create_user(self, email: str, password: str | None = None, **extra_fields):  # type: ignore[override]
+    def create_user(self, email: str | None = None, password: str | None = None, **extra_fields):  # type: ignore[override]
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(email, password, **extra_fields)
 
-    def create_superuser(self, email: str, password: str | None = None, **extra_fields):  # type: ignore[override]
+    def create_superuser(self, email: str | None = None, password: str | None = None, **extra_fields):  # type: ignore[override]
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
 
@@ -37,6 +37,9 @@ class UserManager(DjangoUserManager["User"]):
             raise ValueError(msg)
         if extra_fields.get("is_superuser") is not True:
             msg = "Superuser must have is_superuser=True."
+            raise ValueError(msg)
+        if email is None:
+            msg = "Superuser must have an email address."
             raise ValueError(msg)
 
         return self._create_user(email, password, **extra_fields)

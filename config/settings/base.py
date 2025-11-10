@@ -2,9 +2,11 @@
 """Base settings to build other settings files upon."""
 
 import ssl
+from datetime import timedelta
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # acham/
@@ -341,6 +343,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.TokenAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -348,6 +351,7 @@ REST_FRAMEWORK = {
 
 # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
 CORS_URLS_REGEX = r"^/api/.*$"
+
 
 # By Default swagger ui is available only to admin user(s). You can change permission classes to change that
 # See more configuration options at https://drf-spectacular.readthedocs.io/en/latest/settings.html#settings
@@ -511,3 +515,47 @@ JAZZMIN_SETTINGS = {
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "Language",
+]
+
+# simplejwt
+# ------------------------------------------------------------------------------
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": env("DJANGO_SECRET_KEY", default="secret_key"),
+    "UPDATE_LAST_LOGIN": True,
+    "TOKEN_OBTAIN_SERIALIZER": "acham.users.api.serializers.EmailPhoneTokenObtainPairSerializer",
+}
+
+# External integrations
+# ------------------------------------------------------------------------------
+ESKIZ_EMAIL = env("ESKIZ_EMAIL", default=None)
+ESKIZ_PASSWORD = env("ESKIZ_PASSWORD", default=None)
+ESKIZ_SENDER = env("ESKIZ_SENDER", default=None)
+ESKIZ_CALLBACK_URL = env("ESKIZ_CALLBACK_URL", default=None)
+
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default=None)
+GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default=None)
+GOOGLE_OAUTH_SCOPES = env.list(
+    "GOOGLE_OAUTH_SCOPES",
+    default=[
+        "openid",
+        "email",
+        "profile",
+    ],
+)
+
+FACEBOOK_OAUTH_CLIENT_ID = env("FACEBOOK_OAUTH_CLIENT_ID", default=None)
+FACEBOOK_OAUTH_CLIENT_SECRET = env("FACEBOOK_OAUTH_CLIENT_SECRET", default=None)
+FACEBOOK_OAUTH_SCOPES = env.list(
+    "FACEBOOK_OAUTH_SCOPES",
+    default=[
+        "email",
+        "public_profile",
+    ],
+)

@@ -14,7 +14,7 @@ app_name = "api"
 urlpatterns = router.urls + [
     # 🛍️ PRODUCTS (All product-related endpoints under /api/products/)
     path("products/", include("acham.products.api.urls")),
-    
+    path("", include("acham.users.api.urls")),
     # 🎯 BANNER
     path("banner/", include("acham.banner.api.urls")),
 ]

@@ -61,10 +61,10 @@ services:
     ports: []
     command: /start-celerybeat
 
-  flower:
-    <<: *django
-    image: acham_local_flower
-    container_name: acham_local_flower
-    ports:
-      - '5555:5555'
-    command: /start-flower
+  # flower:
+  #   <<: *django
+  #   image: acham_local_flower
+  #   container_name: acham_local_flower
+  #   ports:
+  #     - '5555:5555'
+  #   command: /start-flower
