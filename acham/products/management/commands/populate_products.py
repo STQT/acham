@@ -179,6 +179,11 @@ class Command(BaseCommand):
                 continue
 
             alt_text = data.get("alt_description") or data.get("description") or product.name
+            alt_field = ProductShot._meta.get_field("alt_text")
+            if alt_text and isinstance(alt_text, str):
+                alt_text = alt_text.strip()
+                if alt_field.max_length:
+                    alt_text = alt_text[: alt_field.max_length]
             response = requests.get(image_url, timeout=10)
             response.raise_for_status()
 
