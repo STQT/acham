@@ -25,6 +25,7 @@ urlpatterns = [
     path("products/", include("acham.products.urls", namespace="products")),
     path("banner/", include("acham.banner.urls" , namespace="banner")),
     # Your stuff: custom urls includes go here
+    path("i18n/", include("django.conf.urls.i18n")),
     # ...
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),

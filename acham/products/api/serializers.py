@@ -6,6 +6,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     """Serializer for Collection model."""
     
     product_count = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
     
     class Meta:
         model = Collection
@@ -16,6 +17,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             'slug',
             'is_active',
             'is_new_arrival',
+            'is_featured_banner',
             'product_count',
             'created_at',
             'updated_at'
@@ -26,6 +28,15 @@ class CollectionSerializer(serializers.ModelSerializer):
         """Get the number of available products in this collection."""
         return obj.products.filter(is_available=True).count()
 
+    def get_image(self, obj) -> str | None:
+        if not obj.image:
+            return None
+        request = self.context.get('request')
+        url = obj.image.url
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+
 
 class ChoiceItemSerializer(serializers.Serializer):
     """Serializer for simple value/label pairs."""
@@ -35,6 +46,8 @@ class ChoiceItemSerializer(serializers.Serializer):
 
 class ProductShotSerializer(serializers.ModelSerializer):
     """Serializer for ProductShot model."""
+    
+    image = serializers.SerializerMethodField()
     
     class Meta:
         model = ProductShot
@@ -47,6 +60,15 @@ class ProductShotSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+    
+    def get_image(self, obj) -> str | None:
+        if not obj.image:
+            return None
+        request = self.context.get('request')
+        url = obj.image.url
+        if request:
+            return request.build_absolute_uri(url)
+        return url
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -112,6 +134,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     """Simplified serializer for product lists."""
     
     primary_image = serializers.SerializerMethodField()
+    shots = ProductShotSerializer(many=True, read_only=True)
     collection = CollectionSerializer(read_only=True)
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     size_display = serializers.CharField(source='get_size_display', read_only=True)
@@ -132,6 +155,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             'price',
             'is_available',
             'primary_image',
+            'shots',
             'created_at'
         ]
     

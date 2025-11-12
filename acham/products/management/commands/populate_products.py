@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from PIL import Image
 
 from acham.products.models import Collection, Product, ProductShot
 
@@ -109,7 +110,11 @@ class Command(BaseCommand):
         while len(collections) < amount:
             name = COLLECTION_NAMES[idx % len(COLLECTION_NAMES)]
             slug = f"collection-{Collection.objects.count() + 1}"
-            collection = Collection.objects.create(name=name, slug=slug)
+            collection = Collection.objects.create(
+                name=name,
+                slug=slug,
+                **self.translation_kwargs({"name": name}),
+            )
             collections.append(collection)
             idx += 1
         return collections
@@ -118,19 +123,35 @@ class Command(BaseCommand):
         size = random.choice(Product.ProductSize.values)
         product_type = random.choice(Product.ProductType.values)
         price = Decimal(random.randrange(15000, 150000)) / 100
+        name = f"{collection.name} #{random.randint(100, 999)}"
+        material = random.choice(MATERIALS)
+        color = random.choice(COLORS)
+        short_description = random.choice(SHORT_DESCRIPTIONS)
+        detailed_description = "\n".join(random.sample(SHORT_DESCRIPTIONS, k=2))
+        care_instructions = random.choice(CARE_INSTRUCTIONS)
 
         product = Product.objects.create(
             collection=collection,
-            name=f"{collection.name} #{random.randint(100, 999)}",
+            name=name,
             size=size,
-            material=random.choice(MATERIALS),
+            material=material,
             type=product_type,
-            color=random.choice(COLORS),
-            short_description=random.choice(SHORT_DESCRIPTIONS),
-            detailed_description="\n".join(random.sample(SHORT_DESCRIPTIONS, k=2)),
-            care_instructions=random.choice(CARE_INSTRUCTIONS),
+            color=color,
+            short_description=short_description,
+            detailed_description=detailed_description,
+            care_instructions=care_instructions,
             price=price,
             is_available=random.choice([True, True, False]),
+            **self.translation_kwargs(
+                {
+                    "name": name,
+                    "material": material,
+                    "color": color,
+                    "short_description": short_description,
+                    "detailed_description": detailed_description,
+                    "care_instructions": care_instructions,
+                }
+            ),
         )
         return product
 
@@ -140,32 +161,53 @@ class Command(BaseCommand):
         queries: Iterable[str],
         access_key: str,
         force_replace: bool = False,
+        required_count: int = 3,
     ) -> None:
         if product.shots.exists() and not force_replace:
             return
 
         product.shots.all().delete()
-        query = random.choice(list(queries))
-        data = self.request_unsplash_photo(query, access_key)
+        shots_to_create = max(required_count, 3)
+        queries_list = list(queries)
 
-        image_url = data["urls"]["regular"]
-        alt_text = data.get("alt_description") or data.get("description") or product.name
+        for idx in range(shots_to_create):
+            query = random.choice(queries_list)
+            data = self.request_unsplash_photo(query, access_key)
 
-        response = requests.get(image_url, timeout=10)
-        response.raise_for_status()
-        filename = f"unsplash-{data['id']}.jpg"
-        content = ContentFile(response.content)
+            image_url = data["urls"].get("full") or data["urls"].get("regular")
+            if not image_url:
+                continue
 
-        shot = ProductShot(product=product, alt_text=alt_text or product.name, is_primary=True, order=0)
-        shot.image.save(filename, content, save=True)
+            alt_text = data.get("alt_description") or data.get("description") or product.name
+            response = requests.get(image_url, timeout=10)
+            response.raise_for_status()
 
-        # add a secondary angle if available
-        secondary_url = data.get("urls", {}).get("small")
-        if secondary_url:
-            sec_resp = requests.get(secondary_url, timeout=10)
-            sec_resp.raise_for_status()
-            secondary = ProductShot(product=product, alt_text=f"{product.name} detail", order=1)
-            secondary.image.save(f"unsplash-{data['id']}-detail.jpg", ContentFile(sec_resp.content), save=True)
+            file_content = self.ensure_jpeg(ContentFile(response.content))
+            filename = f"unsplash-{data['id']}-{idx}.jpg"
+
+            shot = ProductShot(
+                product=product,
+                alt_text=alt_text or product.name,
+                is_primary=idx == 0,
+                order=idx,
+            )
+            shot.image.save(filename, file_content, save=True)
+
+    def ensure_jpeg(self, content: ContentFile) -> ContentFile:
+        try:
+            image = Image.open(io.BytesIO(content.read()))
+        except Exception as exc:  # noqa: BLE001
+            raise CommandError(f"Unable to process image: {exc}") from exc
+
+        if image.format and image.format.lower() == "jpeg":
+            content.seek(0)
+            return content
+
+        converted = io.BytesIO()
+        if image.mode in {"RGBA", "P"}:
+            image = image.convert("RGB")
+        image.save(converted, format="JPEG", quality=90)
+        return ContentFile(converted.getvalue())
 
     def request_unsplash_photo(self, query: str, access_key: str) -> dict:
         endpoint = "https://api.unsplash.com/photos/random"
@@ -180,3 +222,11 @@ class Command(BaseCommand):
         if not isinstance(payload, dict):
             raise CommandError("Unexpected response from Unsplash API")
         return payload
+
+    def translation_kwargs(self, field_values: dict[str, str]) -> dict[str, str]:
+        languages = getattr(settings, "MODELTRANSLATION_LANGUAGES", ("en",))
+        translations: dict[str, str] = {}
+        for field, value in field_values.items():
+            for language in languages:
+                translations[f"{field}_{language}"] = value
+        return translations

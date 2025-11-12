@@ -1,6 +1,8 @@
 
 {% load static i18n %}<!DOCTYPE html>
 {% get_current_language as LANGUAGE_CODE %}
+{% get_available_languages as AVAILABLE_LANGUAGES %}
+{% get_language_info_list for AVAILABLE_LANGUAGES as LANGUAGE_INFO_LIST %}
 <html lang="{{ LANGUAGE_CODE }}">
   <head>
     <meta charset="utf-8" />
@@ -39,9 +41,7 @@
 
 <!-- Bootstrap JS -->
 <script defer
-        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.min.js"
-        integrity="sha512-1/RvZTcCDEUjY/CypiMz+iqqtaoQfAITmNSJY17Myp4Ms5mdxPS5UV7iOfdZoxcGhzFbOm6sntTKJppjvuhg4g=="
-        crossorigin="anonymous"
+        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.bundle.min.js"
         referrerpolicy="no-referrer"></script>
 <!-- Your stuff: Third-party javascript libraries go here -->
 
@@ -70,7 +70,7 @@
         </button>
         <a class="navbar-brand" href="{% url 'home' %}">ACHAM Collection</a>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav mr-auto">
+          <ul class="navbar-nav me-auto mb-2 mb-md-0">
             <li class="nav-item active">
               <a class="nav-link" href="{% url 'home' %}">Home <span class="visually-hidden">(current)</span></a>
             </li>
@@ -99,6 +99,37 @@
               </li>
             {% endif %}
           </ul>
+          <div class="ms-auto d-flex align-items-center">
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary dropdown-toggle text-uppercase"
+                      type="button"
+                      id="languageDropdown"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false">
+                {{ LANGUAGE_CODE }}
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end"
+                  aria-labelledby="languageDropdown">
+                {% for language in LANGUAGE_INFO_LIST %}
+                  <li>
+                    <form method="post"
+                          action="{% url 'set_language' %}"
+                          class="language-option-form">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button type="submit"
+                              name="language"
+                              value="{{ language.code }}"
+                              class="dropdown-item d-flex justify-content-between align-items-center {% if language.code == LANGUAGE_CODE %}active{% endif %}">
+                        <span>{{ language.name_local }}</span>
+                        <span class="text-uppercase">{{ language.code }}</span>
+                      </button>
+                    </form>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </nav>

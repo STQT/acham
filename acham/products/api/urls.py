@@ -18,6 +18,7 @@ urlpatterns = [
 
     # 📦 COLLECTIONS
     path('collections/', CollectionListView.as_view(), name='collection-list'),
+    path('collections/featured/', featured_collection, name='collection-featured'),
     path('collections/<int:pk>/', CollectionDetailView.as_view(), name='collection-detail'),
     path('collections/<int:collection_id>/products/', CollectionProductsView.as_view(), name='collection-products'),
     path('collections/<int:collection_id>/page/', collection_page, name='collection-page'),

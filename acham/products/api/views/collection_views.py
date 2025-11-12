@@ -22,9 +22,35 @@ class CollectionListView(generics.ListAPIView):
     """
     List all active collections.
     """
-    queryset = Collection.objects.filter(is_active=True)
+    queryset = Collection.objects.filter(is_active=True).order_by('-is_featured_banner', '-created_at')
     serializer_class = CollectionSerializer
     ordering = ['-created_at']
+
+
+@extend_schema(
+    operation_id='products_collection_featured',
+    tags=['Collections'],
+    summary='Get featured collection',
+    description='Return the collection marked as featured banner (or fallback to the most recent active collection).',
+    responses={200: CollectionSerializer}
+)
+@api_view(['GET'])
+def featured_collection(request):
+    """
+    Get the featured banner collection.
+    """
+    collection = Collection.objects.filter(
+        is_active=True,
+        is_featured_banner=True
+    ).order_by('-updated_at').first()
+
+    if not collection:
+        collection = Collection.objects.filter(is_active=True).order_by('-created_at').first()
+        if not collection:
+            return Response({'collection': None}, status=status.HTTP_200_OK)
+
+    serializer = CollectionSerializer(collection, context={'request': request})
+    return Response({'collection': serializer.data})
 
 
 @extend_schema(

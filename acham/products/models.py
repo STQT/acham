@@ -38,6 +38,12 @@ class Collection(models.Model):
         verbose_name=_("New Arrival"),
         help_text=_("Whether this collection should appear in new arrivals page")
     )
+
+    is_featured_banner = models.BooleanField(
+        default=False,
+        verbose_name=_("Featured Banner"),
+        help_text=_("Mark this collection to appear as the main banner on the storefront")
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -46,6 +52,13 @@ class Collection(models.Model):
         ordering = ['-created_at']
         verbose_name = _("Collection")
         verbose_name_plural = _("Collections")
+        constraints = [
+            models.UniqueConstraint(
+                fields=['is_featured_banner'],
+                condition=models.Q(is_featured_banner=True),
+                name='unique_featured_collection_banner'
+            )
+        ]
     
     def __str__(self):
         return self.name

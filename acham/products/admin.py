@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from modeltranslation.admin import TranslationAdmin
 from .models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem, Collection, ProductRelation
 
 
@@ -12,10 +13,11 @@ class ProductShotInline(admin.TabularInline):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(TranslationAdmin):
     """Admin configuration for Product model."""
     
     list_display = [
+        'primary_image_preview',
         'name',
         'collection',
         'type',
@@ -66,6 +68,23 @@ class ProductAdmin(admin.ModelAdmin):
         if obj:  # editing an existing object
             return self.readonly_fields + ['created_at', 'updated_at']
         return self.readonly_fields
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related('shots')
+    
+    def primary_image_preview(self, obj):
+        shot = next((shot for shot in obj.shots.all() if shot.is_primary), None)
+        if not shot:
+            shot = obj.shots.first()
+        if shot and shot.image:
+            return format_html(
+                '<img src="{}" width="60" height="60" style="object-fit: cover; border-radius: 4px;" />',
+                shot.image.url,
+            )
+        return "—"
+    
+    primary_image_preview.short_description = "Primary"
 
 
 @admin.register(ProductShot)
@@ -118,7 +137,7 @@ class ProductShotAdmin(admin.ModelAdmin):
 
 
 @admin.register(Collection)
-class CollectionAdmin(admin.ModelAdmin):
+class CollectionAdmin(TranslationAdmin):
     """Admin configuration for Collection model."""
 
     list_display = [
@@ -127,12 +146,14 @@ class CollectionAdmin(admin.ModelAdmin):
         'slug',
         'is_active',
         'is_new_arrival',
+        'is_featured_banner',
         'created_at'
     ]
 
     list_filter = [
         'is_active',
         'is_new_arrival',
+        'is_featured_banner',
         'created_at'
     ]
 
@@ -150,9 +171,14 @@ class CollectionAdmin(admin.ModelAdmin):
             'fields': ('name', 'slug', 'image')
         }),
         ('Settings', {
-            'fields': ('is_active', 'is_new_arrival')
+            'fields': ('is_active', 'is_new_arrival', 'is_featured_banner')
         }),
     )
+
+    def save_model(self, request, obj, form, change):
+        if obj.is_featured_banner:
+            Collection.objects.exclude(pk=obj.pk).update(is_featured_banner=False)
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(UserFavorite)
