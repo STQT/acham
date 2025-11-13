@@ -97,6 +97,7 @@ LOCAL_APPS = [
     "acham.users",
     "acham.products",
     "acham.banner",
+    "acham.orders",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

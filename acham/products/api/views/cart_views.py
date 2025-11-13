@@ -1,7 +1,8 @@
 from rest_framework import generics, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
+from rest_framework.permissions import IsAuthenticated
 
 from ...models import Product, Cart, CartItem
 from ..serializers import (
@@ -22,6 +23,7 @@ class CartDetailView(generics.RetrieveAPIView):
     Get user's cart with all items.
     """
     serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_object(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -38,6 +40,7 @@ class CartSummaryView(generics.RetrieveAPIView):
     Get cart summary (total items, price, etc.).
     """
     serializer_class = CartSummarySerializer
+    permission_classes = [IsAuthenticated]
     
     def get_object(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -54,6 +57,7 @@ class CartItemListCreateView(generics.ListCreateAPIView):
     List cart items or add item to cart.
     """
     serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -74,6 +78,7 @@ class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     Retrieve, update, or remove cart item.
     """
     serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -93,6 +98,7 @@ class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     }
 )
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def add_to_cart(request, product_id):
     """
     Add product to cart or update quantity if already exists.
@@ -135,6 +141,7 @@ def add_to_cart(request, product_id):
     }
 )
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def remove_from_cart(request, product_id):
     """
     Remove product from cart.
@@ -167,6 +174,7 @@ def remove_from_cart(request, product_id):
     }
 )
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated])
 def update_cart_item_quantity(request, product_id):
     """
     Update quantity of a product in cart.
@@ -205,6 +213,7 @@ def update_cart_item_quantity(request, product_id):
     }
 )
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def clear_cart(request):
     """
     Remove all items from cart.

@@ -1,0 +1,18 @@
+.product__item {
+  position: relative;
+
+  &__badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(209, 67, 67, 0.85);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    z-index: 2;
+  }
+}
+
