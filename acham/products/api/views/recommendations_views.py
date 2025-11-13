@@ -104,11 +104,16 @@ def get_smart_complete_the_look_recommendations(source_product):
     """
     recommendations = []
     
-    # Get products from same collection first
-    same_collection = Product.objects.filter(
-        collection=source_product.collection,
-        is_available=True
-    ).exclude(id=source_product.id)
+    collection = source_product.collection
+
+    # Get products from same collection first (if any)
+    if collection is not None:
+        same_collection = Product.objects.filter(
+            collection=collection,
+            is_available=True
+        ).exclude(id=source_product.id)
+    else:
+        same_collection = Product.objects.none()
     
     if source_product.type == 'shoes':
         recommendations.extend(
@@ -136,9 +141,12 @@ def get_smart_complete_the_look_recommendations(source_product):
     
     # If not enough from same collection, add similar products from other collections
     if len(recommendations) < 3:
+        additional_filters = Q(type__in=['shoes', 'bags', 'accessories'])
+        if collection is not None:
+            additional_filters |= Q(collection__is_new_arrival=collection.is_new_arrival)
+
         similar_products = Product.objects.filter(
-            Q(collection__is_new_arrival=source_product.collection.is_new_arrival) |
-            Q(type__in=['shoes', 'bags', 'accessories']),
+            additional_filters,
             is_available=True
         ).exclude(id=source_product.id).exclude(id__in=[p.id for p in recommendations])[:3-len(recommendations)]
         
