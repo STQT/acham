@@ -2,6 +2,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
+from acham.utils.image_processing import optimize_image
+
 
 class Collection(models.Model):
     """Collection model for grouping products."""
@@ -62,6 +64,12 @@ class Collection(models.Model):
     
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        force_optimize = kwargs.pop("force_optimize", False)
+        if self.image and (force_optimize or getattr(self.image, "_file", None)):
+            optimize_image(self.image, force=force_optimize)
+        super().save(*args, **kwargs)
 
 
 class Product(models.Model):
@@ -218,6 +226,11 @@ class ProductShot(models.Model):
         return f"{self.product.name} - Shot {self.order}"
     
     def save(self, *args, **kwargs):
+        force_optimize = kwargs.pop("force_optimize", False)
+
+        if self.image and (force_optimize or getattr(self.image, "_file", None)):
+            optimize_image(self.image, force=force_optimize)
+
         # Ensure only one primary image per product
         if self.is_primary:
             ProductShot.objects.filter(
