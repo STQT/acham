@@ -66,9 +66,8 @@ class Collection(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        force_optimize = kwargs.pop("force_optimize", False)
-        if self.image and (force_optimize or getattr(self.image, "_file", None)):
-            optimize_image(self.image, force=force_optimize)
+        if self.image and getattr(self.image, "_file", None):
+            optimize_image(self.image, force=False)
         super().save(*args, **kwargs)
 
 
@@ -226,10 +225,8 @@ class ProductShot(models.Model):
         return f"{self.product.name} - Shot {self.order}"
     
     def save(self, *args, **kwargs):
-        force_optimize = kwargs.pop("force_optimize", False)
-
-        if self.image and (force_optimize or getattr(self.image, "_file", None)):
-            optimize_image(self.image, force=force_optimize)
+        if self.image and getattr(self.image, "_file", None):
+            optimize_image(self.image, force=False)
 
         # Ensure only one primary image per product
         if self.is_primary:
