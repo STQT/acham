@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import secrets
 from urllib.parse import urlencode
 
@@ -147,6 +148,19 @@ class SocialOAuthBaseView(AuthResponseMixin, APIView):
         User = get_user_model()
 
         with transaction.atomic():
+            email_lower = email.lower() if email else None
+            generated_email = False
+            if not email_lower:
+                base = re.sub(r"[^a-z0-9]+", "-", f"{self.provider}-{uid}".lower()).strip("-") or f"{self.provider}-user"
+                domain = f"{self.provider}.oauth.local"
+                candidate = f"{base}@{domain}"
+                suffix = 1
+                while User.objects.filter(email__iexact=candidate).exists():
+                    candidate = f"{base}-{suffix}@{domain}"
+                    suffix += 1
+                email_lower = candidate
+                generated_email = True
+
             social_account = (
                 SocialAccount.objects.select_related("user")
                 .filter(provider=self.provider, uid=uid)
@@ -158,7 +172,6 @@ class SocialOAuthBaseView(AuthResponseMixin, APIView):
                 social_account.save(update_fields=["extra_data"])
             else:
                 user = None
-                email_lower = email.lower() if email else None
                 if email_lower:
                     user = User.objects.filter(email__iexact=email_lower).first()
                 if user is None:
@@ -173,7 +186,7 @@ class SocialOAuthBaseView(AuthResponseMixin, APIView):
                     user=user,
                     extra_data=extra_data,
                 )
-                if email_lower:
+                if email_lower and not generated_email:
                     EmailAddress.objects.update_or_create(
                         user=user,
                         email=email_lower,
