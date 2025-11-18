@@ -16,7 +16,6 @@ from acham.users.api.auth_views import PasswordChangeView
 
 urlpatterns = [
     path("auth/register/email/", EmailRegistrationView.as_view(), name="auth-register-email"),
-    path("auth/register/phone/request/", PhoneRegistrationRequestView.as_view(), name="auth-register-phone-request"),
     path("auth/register/phone/confirm/", PhoneRegistrationConfirmView.as_view(), name="auth-register-phone-confirm"),
     path("auth/login/", EmailPhoneTokenObtainPairView.as_view(), name="auth-login"),
     path("auth/login/refresh/", TokenRefreshView.as_view(), name="auth-refresh"),

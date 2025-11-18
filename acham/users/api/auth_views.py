@@ -24,7 +24,6 @@ from acham.users.api.serializers import EmailRegistrationSerializer
 from acham.users.api.serializers import PhoneOTPLoginRequestSerializer
 from acham.users.api.serializers import PhoneOTPVerifySerializer
 from acham.users.api.serializers import PhoneRegistrationConfirmSerializer
-from acham.users.api.serializers import PhoneRegistrationRequestSerializer
 from acham.users.api.serializers import PasswordChangeSerializer
 from acham.users.api.serializers import UserSerializer
 
@@ -65,16 +64,6 @@ class PhoneRegistrationRequestView(APIView):
         return Response({"detail": _("OTP sent to phone number.")}, status=status.HTTP_200_OK)
 
 
-class PhoneRegistrationConfirmView(AuthResponseMixin, APIView):
-    permission_classes = [AllowAny]
-    serializer_class = PhoneRegistrationConfirmSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        return self.build_token_response(user=user, request=request, status_code=status.HTTP_201_CREATED)
-
 
 class PhoneOTPLoginRequestView(APIView):
     permission_classes = [AllowAny]
@@ -83,8 +72,15 @@ class PhoneOTPLoginRequestView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"detail": _("OTP sent to phone number.")}, status=status.HTTP_200_OK)
+        result = serializer.save()
+        return Response(
+            {
+                "detail": _("OTP sent to phone number."),
+                "is_new_user": result.get("is_new_user", False),
+                "otp_purpose": result.get("otp_purpose"),
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class PhoneOTPVerifyView(AuthResponseMixin, APIView):

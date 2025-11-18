@@ -20,10 +20,15 @@ def normalize_phone(value: str) -> str:
     cleaned = re.sub(r"[^\d]", "", value)
     if cleaned.startswith("00"):
         cleaned = cleaned[2:]
-    if cleaned and not cleaned.startswith("+"):
+    if not cleaned:
+        return value
+
+    if len(cleaned) == 9 and cleaned.isdigit():
+        cleaned = f"998{cleaned}"
+
+    if not cleaned.startswith("+"):
         cleaned = f"+{cleaned}"
-    elif not cleaned:
-        cleaned = value
+
     return cleaned
 
 
@@ -149,29 +154,6 @@ class EmailRegistrationSerializer(serializers.ModelSerializer[User]):
         return User.objects.create_user(password=password, **validated_data)
 
 
-class PhoneRegistrationRequestSerializer(serializers.Serializer[dict[str, str]]):
-    phone = serializers.CharField(validators=[User.phone_validator])
-
-    default_error_messages = {
-        "phone_exists": _("User with this phone already exists."),
-    }
-
-    def validate_phone(self, value: str) -> str:
-        normalized = normalize_phone(value)
-        User.phone_validator(normalized)
-        if User.objects.filter(phone=normalized).exists():
-            self.fail("phone_exists")
-        return normalized
-
-    def create(self, validated_data: dict[str, str]) -> dict[str, str]:
-        phone = validated_data["phone"]
-        try:
-            send_phone_otp(phone=phone, purpose=PhoneOTP.PURPOSE_REGISTRATION)
-        except OTPError as exc:
-            raise serializers.ValidationError({"phone": str(exc)}) from exc
-        return validated_data
-
-
 class PhoneRegistrationConfirmSerializer(serializers.Serializer[dict[str, Any]]):
     phone = serializers.CharField(validators=[User.phone_validator])
     code = serializers.CharField(min_length=4, max_length=6)
@@ -226,21 +208,28 @@ class PhoneOTPLoginRequestSerializer(serializers.Serializer[dict[str, str]]):
     def validate_phone(self, value: str) -> str:
         normalized = normalize_phone(value)
         User.phone_validator(normalized)
-        try:
-            user = User.objects.get(phone=normalized)
-        except User.DoesNotExist as exc:
-            raise serializers.ValidationError({"phone": self.error_messages["not_found"]}) from exc
-        if not user.is_active:
-            raise serializers.ValidationError({"phone": self.error_messages["inactive"]})
-        self.context["user"] = user
+        user = User.objects.filter(phone=normalized).first()
+
+        if user:
+            if not user.is_active:
+                raise serializers.ValidationError({"phone": self.error_messages["inactive"]})
+            self.context["user"] = user
+            self.context["otp_purpose"] = PhoneOTP.PURPOSE_LOGIN
+        else:
+            self.context["user"] = None
+            self.context["otp_purpose"] = PhoneOTP.PURPOSE_REGISTRATION
+
         return normalized
 
     def create(self, validated_data: dict[str, str]) -> dict[str, str]:
         phone = validated_data["phone"]
+        purpose = self.context.get("otp_purpose", PhoneOTP.PURPOSE_LOGIN)
         try:
-            send_phone_otp(phone=phone, purpose=PhoneOTP.PURPOSE_LOGIN)
+            send_phone_otp(phone=phone, purpose=purpose)
         except OTPError as exc:
             raise serializers.ValidationError({"phone": str(exc)}) from exc
+        validated_data["otp_purpose"] = purpose
+        validated_data["is_new_user"] = purpose == PhoneOTP.PURPOSE_REGISTRATION
         return validated_data
 
 
