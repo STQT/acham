@@ -51,6 +51,16 @@ def find_user_by_phone(phone: str) -> User | None:
     return User.objects.filter(phone__in=variants).first()
 
 
+def ensure_user_exists_for_phone(phone: str) -> User:
+    user = find_user_by_phone(phone)
+    if user:
+        return user
+
+    normalized = normalize_phone(phone)
+    password = User.objects.make_random_password()
+    return User.objects.create_user(phone=normalized, email=None, password=password)
+
+
 class UserSerializer(serializers.ModelSerializer[User]):
     phone = serializers.SerializerMethodField()
 
@@ -256,9 +266,7 @@ class PhoneOTPVerifySerializer(serializers.Serializer[dict[str, str]]):
             otp = verify_phone_otp(phone=phone, purpose=PhoneOTP.PURPOSE_LOGIN, code=attrs["code"])
         except OTPError as exc:
             raise serializers.ValidationError({"code": str(exc)}) from exc
-        user = find_user_by_phone(otp.phone)
-        if not user:
-            raise serializers.ValidationError({"phone": _("User not found.")})
+        user = ensure_user_exists_for_phone(otp.phone)
         attrs["user"] = user
         return attrs
 
