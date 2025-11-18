@@ -4,6 +4,7 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from django.contrib.auth import password_validation
 from django.utils.translation import gettext_lazy as _
+from django.utils.crypto import get_random_string
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -57,7 +58,7 @@ def ensure_user_exists_for_phone(phone: str) -> User:
         return user
 
     normalized = normalize_phone(phone)
-    password = User.objects.make_random_password()
+    password = get_random_string(20)
     return User.objects.create_user(phone=normalized, email=None, password=password)
 
 
