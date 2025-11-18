@@ -53,18 +53,6 @@ class EmailRegistrationView(AuthResponseMixin, APIView):
         return self.build_token_response(user=user, request=request, status_code=status.HTTP_201_CREATED)
 
 
-class PhoneRegistrationRequestView(APIView):
-    permission_classes = [AllowAny]
-    serializer_class = PhoneRegistrationRequestSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"detail": _("OTP sent to phone number.")}, status=status.HTTP_200_OK)
-
-
-
 class PhoneOTPLoginRequestView(APIView):
     permission_classes = [AllowAny]
     serializer_class = PhoneOTPLoginRequestSerializer

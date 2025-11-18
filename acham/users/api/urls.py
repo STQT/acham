@@ -11,7 +11,6 @@ from acham.users.api.auth_views import GoogleOAuthCallbackView
 from acham.users.api.auth_views import PhoneOTPLoginRequestView
 from acham.users.api.auth_views import PhoneOTPVerifyView
 from acham.users.api.auth_views import PhoneRegistrationConfirmView
-from acham.users.api.auth_views import PhoneRegistrationRequestView
 from acham.users.api.auth_views import PasswordChangeView
 
 urlpatterns = [
