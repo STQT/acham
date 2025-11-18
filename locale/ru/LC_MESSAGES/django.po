@@ -1,0 +1,84 @@
+# Translations for the ACHAM Collection project
+# Copyright (C) 2025 Kairat Sultan
+# Kairat Sultan <gayratbek.sultonov@icloud.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.1.0\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Confirmation code for registration on the Acham.uz website: {code}"
+msgstr "Код подтверждения для регистрации на сайте Аcham.uz: {code}"
+
+msgid "OTP code not found or expired."
+msgstr "Код подтверждения не найден или истек."
+
+msgid "OTP code expired."
+msgstr "Код подтверждения истек."
+
+msgid "Invalid OTP code."
+msgstr "Неверный код подтверждения."
+
+msgid "OTP sent to phone number."
+msgstr "Код подтверждения отправлен на номер телефона."
+
+msgid "Password updated successfully."
+msgstr "Пароль успешно обновлен."
+
+msgid "redirect_uri is required."
+msgstr "Требуется redirect_uri."
+
+msgid "OAuth client_id is not configured."
+msgstr "OAuth client_id не настроен."
+
+msgid "code, state, and redirect_uri are required."
+msgstr "Требуются code, state и redirect_uri."
+
+msgid "Invalid or expired state parameter."
+msgstr "Неверный или истекший параметр state."
+
+msgid "redirect_uri mismatch."
+msgstr "Несоответствие redirect_uri."
+
+msgid "OAuth credentials are not configured."
+msgstr "OAuth учетные данные не настроены."
+
+msgid "Unable to determine user identifier from provider response."
+msgstr "Не удалось определить идентификатор пользователя из ответа провайдера."
+
+msgid "Authentication required to place an order."
+msgstr "Требуется аутентификация для размещения заказа."
+
+msgid "Cart is empty."
+msgstr "Корзина пуста."
+
+msgid "Order created"
+msgstr "Заказ создан"
+
+msgid "Product not found"
+msgstr "Товар не найден"
+
+msgid "Product is not available"
+msgstr "Товар недоступен"
+
+msgid "Quantity must be greater than zero"
+msgstr "Количество должно быть больше нуля"
+
+msgid "Product removed from cart"
+msgstr "Товар удален из корзины"
+
+msgid "Cart not found"
+msgstr "Корзина не найдена"
+
+msgid "Product not in cart"
+msgstr "Товар не в корзине"
+
+msgid "Valid quantity is required"
+msgstr "Требуется валидное количество"
+
+msgid "Cart cleared"
+msgstr "Корзина очищена"
+

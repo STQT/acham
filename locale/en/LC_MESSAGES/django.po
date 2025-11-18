@@ -1,0 +1,84 @@
+# Translations for the ACHAM Collection project
+# Copyright (C) 2025 Kairat Sultan
+# Kairat Sultan <gayratbek.sultonov@icloud.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.1.0\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Confirmation code for registration on the Acham.uz website: {code}"
+msgstr "Confirmation code for registration on the Acham.uz website: {code}"
+
+msgid "OTP code not found or expired."
+msgstr "OTP code not found or expired."
+
+msgid "OTP code expired."
+msgstr "OTP code expired."
+
+msgid "Invalid OTP code."
+msgstr "Invalid OTP code."
+
+msgid "OTP sent to phone number."
+msgstr "OTP sent to phone number."
+
+msgid "Password updated successfully."
+msgstr "Password updated successfully."
+
+msgid "redirect_uri is required."
+msgstr "redirect_uri is required."
+
+msgid "OAuth client_id is not configured."
+msgstr "OAuth client_id is not configured."
+
+msgid "code, state, and redirect_uri are required."
+msgstr "code, state, and redirect_uri are required."
+
+msgid "Invalid or expired state parameter."
+msgstr "Invalid or expired state parameter."
+
+msgid "redirect_uri mismatch."
+msgstr "redirect_uri mismatch."
+
+msgid "OAuth credentials are not configured."
+msgstr "OAuth credentials are not configured."
+
+msgid "Unable to determine user identifier from provider response."
+msgstr "Unable to determine user identifier from provider response."
+
+msgid "Authentication required to place an order."
+msgstr "Authentication required to place an order."
+
+msgid "Cart is empty."
+msgstr "Cart is empty."
+
+msgid "Order created"
+msgstr "Order created"
+
+msgid "Product not found"
+msgstr "Product not found"
+
+msgid "Product is not available"
+msgstr "Product is not available"
+
+msgid "Quantity must be greater than zero"
+msgstr "Quantity must be greater than zero"
+
+msgid "Product removed from cart"
+msgstr "Product removed from cart"
+
+msgid "Cart not found"
+msgstr "Cart not found"
+
+msgid "Product not in cart"
+msgstr "Product not in cart"
+
+msgid "Valid quantity is required"
+msgstr "Valid quantity is required"
+
+msgid "Cart cleared"
+msgstr "Cart cleared"
+

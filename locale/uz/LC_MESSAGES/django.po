@@ -1,0 +1,84 @@
+# Translations for the ACHAM Collection project
+# Copyright (C) 2025 Kairat Sultan
+# Kairat Sultan <gayratbek.sultonov@icloud.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.1.0\n"
+"Language: uz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Confirmation code for registration on the Acham.uz website: {code}"
+msgstr "Acham.uz saytida roʻyxatdan oʻtish uchun tasdiqlash kodi: {code}"
+
+msgid "OTP code not found or expired."
+msgstr "Tasdiqlash kodi topilmadi yoki muddati o'tdi."
+
+msgid "OTP code expired."
+msgstr "Tasdiqlash kodi muddati o'tdi."
+
+msgid "Invalid OTP code."
+msgstr "Noto'g'ri tasdiqlash kodi."
+
+msgid "OTP sent to phone number."
+msgstr "Tasdiqlash kodi telefon raqamiga yuborildi."
+
+msgid "Password updated successfully."
+msgstr "Parol muvaffaqiyatli yangilandi."
+
+msgid "redirect_uri is required."
+msgstr "redirect_uri talab qilinadi."
+
+msgid "OAuth client_id is not configured."
+msgstr "OAuth client_id sozlanmagan."
+
+msgid "code, state, and redirect_uri are required."
+msgstr "code, state va redirect_uri talab qilinadi."
+
+msgid "Invalid or expired state parameter."
+msgstr "Noto'g'ri yoki muddati o'tgan state parametri."
+
+msgid "redirect_uri mismatch."
+msgstr "redirect_uri mos kelmaydi."
+
+msgid "OAuth credentials are not configured."
+msgstr "OAuth hisob ma'lumotlari sozlanmagan."
+
+msgid "Unable to determine user identifier from provider response."
+msgstr "Provayder javobidan foydalanuvchi identifikatorini aniqlash mumkin emas."
+
+msgid "Authentication required to place an order."
+msgstr "Buyurtma berish uchun autentifikatsiya talab qilinadi."
+
+msgid "Cart is empty."
+msgstr "Savatcha bo'sh."
+
+msgid "Order created"
+msgstr "Buyurtma yaratildi"
+
+msgid "Product not found"
+msgstr "Mahsulot topilmadi"
+
+msgid "Product is not available"
+msgstr "Mahsulot mavjud emas"
+
+msgid "Quantity must be greater than zero"
+msgstr "Miqdor noldan katta bo'lishi kerak"
+
+msgid "Product removed from cart"
+msgstr "Mahsulot savatchadan olib tashlandi"
+
+msgid "Cart not found"
+msgstr "Savatcha topilmadi"
+
+msgid "Product not in cart"
+msgstr "Mahsulot savatchada yo'q"
+
+msgid "Valid quantity is required"
+msgstr "To'g'ri miqdor talab qilinadi"
+
+msgid "Cart cleared"
+msgstr "Savatcha tozalandi"
+

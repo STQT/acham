@@ -10,6 +10,7 @@ from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from acham.users.models import PhoneOTP
 
@@ -51,8 +52,10 @@ def create_phone_otp(
 def send_phone_otp(phone: str, purpose: str, template: str | None = None) -> str:
     otp, code = create_phone_otp(phone=phone, purpose=purpose)
 
-    message_template = template or "Ваш код подтверждения ACHAM: {code}"
-    message = message_template.format(code=code)
+    if template:
+        message = template.format(code=code)
+    else:
+        message = _("Confirmation code for registration on the Acham.uz website: {code}").format(code=code)
 
     try:
         client = EskizSMSClient()
@@ -75,19 +78,19 @@ def verify_phone_otp(phone: str, purpose: str, code: str) -> PhoneOTP:
     )
 
     if otp is None:
-        raise OTPError("OTP code not found or expired.")
+        raise OTPError(_("OTP code not found or expired."))
 
     if otp.expires_at < timezone.now():
         otp.is_active = False
         otp.save(update_fields=["is_active"])
-        raise OTPError("OTP code expired.")
+        raise OTPError(_("OTP code expired."))
 
     if not check_password(code, otp.code_hash):
         otp.attempts += 1
         if otp.attempts >= MAX_ATTEMPTS:
             otp.is_active = False
         otp.save(update_fields=["attempts", "is_active"])
-        raise OTPError("Invalid OTP code.")
+        raise OTPError(_("Invalid OTP code."))
 
     otp.is_active = False
     otp.verified_at = timezone.now()

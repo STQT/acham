@@ -10,6 +10,7 @@ from allauth.socialaccount.models import SocialAccount
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
+from django.utils.translation import gettext as _
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
@@ -61,7 +62,7 @@ class PhoneRegistrationRequestView(APIView):
         serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"detail": "OTP sent to phone number."}, status=status.HTTP_200_OK)
+        return Response({"detail": _("OTP sent to phone number.")}, status=status.HTTP_200_OK)
 
 
 class PhoneRegistrationConfirmView(AuthResponseMixin, APIView):
@@ -83,7 +84,7 @@ class PhoneOTPLoginRequestView(APIView):
         serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"detail": "OTP sent to phone number."}, status=status.HTTP_200_OK)
+        return Response({"detail": _("OTP sent to phone number.")}, status=status.HTTP_200_OK)
 
 
 class PhoneOTPVerifyView(AuthResponseMixin, APIView):
@@ -109,7 +110,7 @@ class PasswordChangeView(APIView):
         serializer = PasswordChangeSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"detail": "Password updated successfully."}, status=status.HTTP_200_OK)
+        return Response({"detail": _("Password updated successfully.")}, status=status.HTTP_200_OK)
 
 
 class SocialOAuthBaseView(AuthResponseMixin, APIView):
@@ -200,11 +201,11 @@ class SocialOAuthAuthorizeView(SocialOAuthBaseView):
     def get(self, request, *args, **kwargs):
         redirect_uri = request.query_params.get("redirect_uri")
         if not redirect_uri:
-            return Response({"detail": "redirect_uri is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("redirect_uri is required.")}, status=status.HTTP_400_BAD_REQUEST)
 
         client_id, _ = self.get_client_credentials()
         if not client_id:
-            return Response({"detail": "OAuth client_id is not configured."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": _("OAuth client_id is not configured.")}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         state = secrets.token_urlsafe(32)
         self._store_state(state, {"redirect_uri": redirect_uri})
@@ -219,18 +220,18 @@ class SocialOAuthCallbackView(SocialOAuthBaseView):
         redirect_uri = request.data.get("redirect_uri")
 
         if not code or not state or not redirect_uri:
-            return Response({"detail": "code, state, and redirect_uri are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("code, state, and redirect_uri are required.")}, status=status.HTTP_400_BAD_REQUEST)
 
         state_payload = self._pop_state(state)
         if not state_payload:
-            return Response({"detail": "Invalid or expired state parameter."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("Invalid or expired state parameter.")}, status=status.HTTP_400_BAD_REQUEST)
 
         if state_payload.get("redirect_uri") != redirect_uri:
-            return Response({"detail": "redirect_uri mismatch."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("redirect_uri mismatch.")}, status=status.HTTP_400_BAD_REQUEST)
 
         client_id, client_secret = self.get_client_credentials()
         if not client_id or not client_secret:
-            return Response({"detail": "OAuth credentials are not configured."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": _("OAuth credentials are not configured.")}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         try:
             tokens = self.exchange_code_for_token(
@@ -245,7 +246,7 @@ class SocialOAuthCallbackView(SocialOAuthBaseView):
 
         uid = profile.get("id") or profile.get("sub")
         if not uid:
-            return Response({"detail": "Unable to determine user identifier from provider response."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("Unable to determine user identifier from provider response.")}, status=status.HTTP_400_BAD_REQUEST)
 
         email = profile.get("email")
         name = profile.get("name") or profile.get("given_name")

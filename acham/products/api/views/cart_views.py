@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import IsAuthenticated
+from django.utils.translation import gettext as _
 
 from ...models import Product, Cart, CartItem
 from ..serializers import (
@@ -106,14 +107,14 @@ def add_to_cart(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
     except Product.DoesNotExist:
-        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': _('Product not found')}, status=status.HTTP_404_NOT_FOUND)
     
     if not product.is_available:
-        return Response({'error': 'Product is not available'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': _('Product is not available')}, status=status.HTTP_400_BAD_REQUEST)
     
     quantity = request.data.get('quantity', 1)
     if quantity <= 0:
-        return Response({'error': 'Quantity must be greater than zero'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': _('Quantity must be greater than zero')}, status=status.HTTP_400_BAD_REQUEST)
     
     cart, created = Cart.objects.get_or_create(user=request.user)
     cart_item, created = CartItem.objects.get_or_create(
@@ -149,17 +150,17 @@ def remove_from_cart(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
     except Product.DoesNotExist:
-        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': _('Product not found')}, status=status.HTTP_404_NOT_FOUND)
     
     try:
         cart = Cart.objects.get(user=request.user)
         cart_item = CartItem.objects.get(cart=cart, product=product)
         cart_item.delete()
-        return Response({'message': 'Product removed from cart'}, status=status.HTTP_200_OK)
+        return Response({'message': _('Product removed from cart')}, status=status.HTTP_200_OK)
     except Cart.DoesNotExist:
-        return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': _('Cart not found')}, status=status.HTTP_404_NOT_FOUND)
     except CartItem.DoesNotExist:
-        return Response({'error': 'Product not in cart'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': _('Product not in cart')}, status=status.HTTP_404_NOT_FOUND)
 
 
 @extend_schema(
@@ -182,11 +183,11 @@ def update_cart_item_quantity(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
     except Product.DoesNotExist:
-        return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': _('Product not found')}, status=status.HTTP_404_NOT_FOUND)
     
     quantity = request.data.get('quantity')
     if quantity is None or quantity <= 0:
-        return Response({'error': 'Valid quantity is required'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': _('Valid quantity is required')}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         cart = Cart.objects.get(user=request.user)
@@ -197,9 +198,9 @@ def update_cart_item_quantity(request, product_id):
         serializer = CartItemSerializer(cart_item, context={'request': request})
         return Response(serializer.data)
     except Cart.DoesNotExist:
-        return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': _('Cart not found')}, status=status.HTTP_404_NOT_FOUND)
     except CartItem.DoesNotExist:
-        return Response({'error': 'Product not in cart'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': _('Product not in cart')}, status=status.HTTP_404_NOT_FOUND)
 
 
 @extend_schema(
@@ -221,6 +222,6 @@ def clear_cart(request):
     try:
         cart = Cart.objects.get(user=request.user)
         cart.items.all().delete()
-        return Response({'message': 'Cart cleared'}, status=status.HTTP_200_OK)
+        return Response({'message': _('Cart cleared')}, status=status.HTTP_200_OK)
     except Cart.DoesNotExist:
-        return Response({'error': 'Cart not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': _('Cart not found')}, status=status.HTTP_404_NOT_FOUND)

@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import List
 
 from django.db import transaction
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from acham.orders.models import (
@@ -175,11 +176,11 @@ class OrderCreateSerializer(serializers.Serializer):
         request = self.context["request"]
         user = request.user
         if not user.is_authenticated:
-            raise serializers.ValidationError("Authentication required to place an order.")
+            raise serializers.ValidationError(_("Authentication required to place an order."))
 
         cart: Cart | None = getattr(user, "cart", None)
         if not cart or not cart.items.exists():
-            raise serializers.ValidationError("Cart is empty.")
+            raise serializers.ValidationError(_("Cart is empty."))
 
         attrs["cart"] = cart
         return attrs
@@ -274,7 +275,7 @@ class OrderCreateSerializer(serializers.Serializer):
                 order=order,
                 from_status="",
                 to_status=order.status,
-                note="Order created",
+                note=_("Order created"),
             )
 
             cart.items.all().delete()
