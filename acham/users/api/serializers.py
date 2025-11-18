@@ -32,6 +32,25 @@ def normalize_phone(value: str) -> str:
     return cleaned
 
 
+def phone_lookup_variants(phone: str) -> set[str]:
+    normalized = normalize_phone(phone)
+    variants: set[str] = {normalized}
+
+    digits = normalized[1:] if normalized.startswith("+") else normalized
+    variants.add(digits)
+
+    if digits.startswith("998") and len(digits) > 3:
+        local = digits[3:]
+        variants.update({local, f"+{local}", f"998{local}"})
+
+    return {variant for variant in variants if variant}
+
+
+def find_user_by_phone(phone: str) -> User | None:
+    variants = phone_lookup_variants(phone)
+    return User.objects.filter(phone__in=variants).first()
+
+
 class UserSerializer(serializers.ModelSerializer[User]):
     phone = serializers.SerializerMethodField()
 
@@ -208,7 +227,7 @@ class PhoneOTPLoginRequestSerializer(serializers.Serializer[dict[str, str]]):
     def validate_phone(self, value: str) -> str:
         normalized = normalize_phone(value)
         User.phone_validator(normalized)
-        user = User.objects.filter(phone=normalized).first()
+        user = find_user_by_phone(normalized)
         if user and not user.is_active:
             raise serializers.ValidationError({"phone": self.error_messages["inactive"]})
         self.context["user"] = user
@@ -237,10 +256,9 @@ class PhoneOTPVerifySerializer(serializers.Serializer[dict[str, str]]):
             otp = verify_phone_otp(phone=phone, purpose=PhoneOTP.PURPOSE_LOGIN, code=attrs["code"])
         except OTPError as exc:
             raise serializers.ValidationError({"code": str(exc)}) from exc
-        try:
-            user = User.objects.get(phone=otp.phone)
-        except User.DoesNotExist as exc:  # pragma: no cover - should not happen if validated earlier
-            raise serializers.ValidationError({"phone": _("User not found.")}) from exc
+        user = find_user_by_phone(otp.phone)
+        if not user:
+            raise serializers.ValidationError({"phone": _("User not found.")})
         attrs["user"] = user
         return attrs
 
