@@ -65,7 +65,6 @@ class PhoneOTPLoginRequestView(APIView):
             {
                 "detail": _("OTP sent to phone number."),
                 "is_new_user": result.get("is_new_user", False),
-                "otp_purpose": result.get("otp_purpose"),
             },
             status=status.HTTP_200_OK,
         )

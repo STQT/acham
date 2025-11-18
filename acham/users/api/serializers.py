@@ -209,27 +209,19 @@ class PhoneOTPLoginRequestSerializer(serializers.Serializer[dict[str, str]]):
         normalized = normalize_phone(value)
         User.phone_validator(normalized)
         user = User.objects.filter(phone=normalized).first()
-
-        if user:
-            if not user.is_active:
-                raise serializers.ValidationError({"phone": self.error_messages["inactive"]})
-            self.context["user"] = user
-            self.context["otp_purpose"] = PhoneOTP.PURPOSE_LOGIN
-        else:
-            self.context["user"] = None
-            self.context["otp_purpose"] = PhoneOTP.PURPOSE_REGISTRATION
-
+        if user and not user.is_active:
+            raise serializers.ValidationError({"phone": self.error_messages["inactive"]})
+        self.context["user"] = user
         return normalized
 
     def create(self, validated_data: dict[str, str]) -> dict[str, str]:
         phone = validated_data["phone"]
-        purpose = self.context.get("otp_purpose", PhoneOTP.PURPOSE_LOGIN)
+        purpose = PhoneOTP.PURPOSE_LOGIN
         try:
             send_phone_otp(phone=phone, purpose=purpose)
         except OTPError as exc:
             raise serializers.ValidationError({"phone": str(exc)}) from exc
-        validated_data["otp_purpose"] = purpose
-        validated_data["is_new_user"] = purpose == PhoneOTP.PURPOSE_REGISTRATION
+        validated_data["is_new_user"] = self.context.get("user") is None
         return validated_data
 
 
