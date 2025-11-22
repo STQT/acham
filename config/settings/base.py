@@ -566,3 +566,14 @@ FACEBOOK_OAUTH_SCOPES = env.list(
         "public_profile",
     ],
 )
+
+# OCTO Payment Gateway
+# ------------------------------------------------------------------------------
+OCTO_API_URL = env("OCTO_API_URL", default="https://secure.octo.uz")
+OCTO_SHOP_ID = env("OCTO_SHOP_ID", default=None)
+OCTO_SECRET = env("OCTO_SECRET", default=None)
+OCTO_TEST_MODE = env.bool("OCTO_TEST_MODE", default=False)
+
+# Frontend URL for payment redirects
+# ------------------------------------------------------------------------------
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:4200")

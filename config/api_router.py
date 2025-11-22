@@ -18,4 +18,6 @@ urlpatterns = router.urls + [
     path("", include("acham.users.api.urls")),
     # 🎯 BANNER
     path("banner/", include("acham.banner.api.urls")),
+    # 💳 PAYMENTS
+    path("payments/", include("acham.orders.api.payment_urls")),
 ]

@@ -1,7 +1,13 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from .models import Order, OrderAddress, OrderItem, OrderStatusHistory
+from .models import (
+    Order,
+    OrderAddress,
+    OrderItem,
+    OrderStatusHistory,
+    PaymentTransaction,
+)
 
 
 class OrderItemInline(admin.TabularInline):
@@ -75,3 +81,79 @@ class OrderStatusHistoryAdmin(admin.ModelAdmin):
     list_filter = ("to_status", "changed_at")
     search_fields = ("order__number", "note")
     ordering = ("-changed_at",)
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = (
+        "shop_transaction_id",
+        "order",
+        "status",
+        "amount",
+        "currency",
+        "payment_method",
+        "created_at",
+        "completed_at",
+    )
+    list_filter = ("status", "currency", "payment_method", "created_at")
+    search_fields = (
+        "shop_transaction_id",
+        "octo_transaction_id",
+        "octo_payment_id",
+        "order__number",
+    )
+    readonly_fields = (
+        "shop_transaction_id",
+        "octo_transaction_id",
+        "octo_payment_id",
+        "created_at",
+        "updated_at",
+        "completed_at",
+        "request_payload",
+        "response_payload",
+    )
+    ordering = ("-created_at",)
+    fieldsets = (
+        (_("Identification"), {
+            "fields": (
+                "order",
+                "shop_transaction_id",
+                "octo_transaction_id",
+                "octo_payment_id",
+            )
+        }),
+        (_("Status"), {
+            "fields": (
+                "status",
+                "payment_method",
+                "error_code",
+                "error_message",
+            )
+        }),
+        (_("Financial"), {
+            "fields": (
+                "amount",
+                "currency",
+            )
+        }),
+        (_("Verification"), {
+            "fields": (
+                "verification_url",
+                "seconds_left",
+            )
+        }),
+        (_("Timeline"), {
+            "fields": (
+                "created_at",
+                "updated_at",
+                "completed_at",
+            )
+        }),
+        (_("Data"), {
+            "fields": (
+                "request_payload",
+                "response_payload",
+            ),
+            "classes": ("collapse",),
+        }),
+    )
