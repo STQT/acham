@@ -63,6 +63,10 @@ class User(AbstractUser):
         """
         return reverse("users:detail", kwargs={"pk": self.id})
 
+    def __str__(self) -> str:
+        """Human readable representation that never returns None."""
+        return self.name or self.email or self.phone or f"User {self.pk}"
+
 
 class PhoneOTP(models.Model):
     """Stores one-time passwords for phone verification and login."""
