@@ -124,6 +124,51 @@ class PaymentInitiateView(APIView):
                 error_message = octo_response.get("errMessage", _("Payment preparation failed."))
                 logger.error(f"OCTO prepare_payment error: {error_code} - {error_message}")
 
+                # Check if payment already exists (OCTO returns this when payment was created by previous request)
+                octo_data = octo_response.get("data", {})
+                if "This payment was created by previous request" in error_message and octo_data:
+                    # Payment already exists, try to find it or create it with OCTO data
+                    octo_transaction_id = octo_data.get("id") or octo_data.get("octo_payment_UUID")
+
+                    # Check if we already have this transaction
+                    existing_payment = PaymentTransaction.objects.filter(
+                        shop_transaction_id=shop_transaction_id
+                    ).first()
+
+                    if existing_payment:
+                        # Return existing payment
+                        return Response(
+                            {
+                                "transaction_id": existing_payment.octo_transaction_id,
+                                "payment_id": existing_payment.octo_payment_id,
+                                "status": existing_payment.status,
+                                "verification_url": existing_payment.verification_url,
+                                "seconds_left": existing_payment.seconds_left,
+                            },
+                            status=status.HTTP_200_OK,
+                        )
+                    else:
+                        # Create payment transaction with OCTO data
+                        payment_transaction = PaymentTransaction.objects.create(
+                            order=order,
+                            shop_transaction_id=shop_transaction_id,
+                            octo_transaction_id=octo_transaction_id,
+                            status=PaymentTransactionStatus.PREPARED,
+                            amount=order.total_amount,
+                            currency=order.currency,
+                            request_payload={"user_data": user_data, "basket": basket},
+                            response_payload=octo_response,
+                        )
+
+                        return Response(
+                            {
+                                "transaction_id": octo_transaction_id,
+                                "status": payment_transaction.status,
+                            },
+                            status=status.HTTP_201_CREATED,
+                        )
+
+                # Regular error handling
                 payment_transaction = PaymentTransaction.objects.create(
                     order=order,
                     shop_transaction_id=shop_transaction_id,
@@ -146,7 +191,7 @@ class PaymentInitiateView(APIView):
 
             # Success - create payment transaction
             octo_data = octo_response.get("data", {})
-            octo_transaction_id = octo_data.get("id")
+            octo_transaction_id = octo_data.get("id") or octo_data.get("octo_payment_UUID")
 
             payment_transaction = PaymentTransaction.objects.create(
                 order=order,

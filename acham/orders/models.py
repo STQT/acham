@@ -246,6 +246,7 @@ class PaymentTransaction(models.Model):
     octo_transaction_id = models.CharField(
         max_length=128,
         blank=True,
+        null=True,
         help_text=_("Transaction ID from OCTO (id from prepare_payment response)."),
     )
     octo_payment_id = models.CharField(
