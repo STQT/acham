@@ -104,6 +104,9 @@ class PaymentInitiateView(APIView):
         if language not in ["uz", "ru", "en"]:
             language = "uz"
 
+        # Get current time in OCTO format for init_time
+        init_time = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+
         try:
             # Call OCTO prepare_payment
             octo_response = OctoService.prepare_payment(
@@ -115,6 +118,7 @@ class PaymentInitiateView(APIView):
                 notify_url=notify_url,
                 language=language,
                 description=f"Order {order.number}",
+                init_time=init_time,
             )
             logger.info(f"OCTO prepare_payment request data: {{'shop_transaction_id': {shop_transaction_id}, 'total_sum': {order.total_amount}, 'user_data': {user_data}, 'basket': {basket}, 'return_url': {return_url}, 'notify_url': {notify_url}, 'language': {language}, 'description': 'Order {order.number}'}}")
             logger.info(f"OCTO prepare_payment raw response: {octo_response}")
@@ -407,25 +411,59 @@ class PaymentConfirmView(APIView):
             # Get verification info for OTP
             try:
                 verification_response = OctoService.verification_info(transaction_id)
-                if not verification_response.get("error"):
-                    verification_data = verification_response.get("data", {})
-                    payment_transaction.octo_payment_id = verification_data.get("id")
-                    payment_transaction.verification_url = verification_data.get("verification_url", "")
-                    payment_transaction.seconds_left = verification_data.get("secondsLeft")
-                    payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
+
+                if verification_response.get("error"):
+                    # Handle verification error
+                    error_code = verification_response.get("error")
+                    error_message = verification_response.get("errMessage", _("Failed to get verification info."))
+                    payment_transaction.status = PaymentTransaction.Status.FAILED
+                    payment_transaction.error_code = error_code
+                    payment_transaction.error_message = error_message
                     payment_transaction.save()
 
                     return Response(
                         {
-                            "payment_id": payment_transaction.octo_payment_id,
-                            "verification_url": payment_transaction.verification_url,
-                            "seconds_left": payment_transaction.seconds_left,
-                            "status": payment_transaction.status,
+                            "error": error_message,
+                            "error_code": error_code,
                         },
-                        status=status.HTTP_200_OK,
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
+
+                verification_data = verification_response.get("data", {})
+                seconds_left = verification_data.get("secondsLeft")
+
+                # According to OCTO docs, if secondsLeft is 0, verification failed
+                if seconds_left == 0:
+                    payment_transaction.status = PaymentTransaction.Status.FAILED
+                    payment_transaction.error_message = _("Payment verification failed - no time left for OTP.")
+                    payment_transaction.save()
+
+                    return Response(
+                        {
+                            "error": _("Payment verification failed - OTP timeout."),
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                payment_transaction.octo_payment_id = verification_data.get("id")
+                payment_transaction.verification_url = verification_data.get("verification_url", "")
+                payment_transaction.seconds_left = seconds_left
+                payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
+                payment_transaction.save()
+
+                return Response(
+                    {
+                        "payment_id": payment_transaction.octo_payment_id,
+                        "verification_url": payment_transaction.verification_url,
+                        "seconds_left": payment_transaction.seconds_left,
+                        "status": payment_transaction.status,
+                    },
+                    status=status.HTTP_200_OK,
+                )
             except Exception as e:
                 logger.warning(f"Could not get verification info: {e}")
+                # Don't fail the whole payment if verification info fails
+                # Continue with processing status
 
             return Response(
                 {

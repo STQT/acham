@@ -75,6 +75,7 @@ class OctoService:
         description: str = "",
         auto_capture: bool = True,
         ttl: int = 15, # minutes
+        init_time: str = None,
     ) -> Dict[str, Any]:
         url = f"{cls._get_api_url()}/prepare_payment"
         payload = {
@@ -98,6 +99,10 @@ class OctoService:
             "language": language,
             "ttl": ttl,
         }
+
+        # Add init_time if provided
+        if init_time:
+            payload["init_time"] = init_time
         logger.info(f"Sending prepare_payment to OCTO: {json.dumps(payload)}")
         return cls._send_request("POST", url, payload)
 
