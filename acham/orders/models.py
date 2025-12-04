@@ -220,98 +220,37 @@ class OrderStatusHistory(models.Model):
         return f"{self.order.number}: {self.from_status} → {self.to_status}"
 
 
-class PaymentTransactionStatus(models.TextChoices):
-    PENDING = "pending", _("Pending")
-    PREPARED = "prepared", _("Prepared")
-    VERIFICATION_REQUIRED = "verification_required", _("Verification required")
-    PROCESSING = "processing", _("Processing")
-    SUCCESS = "success", _("Success")
-    FAILED = "failed", _("Failed")
-    CANCELLED = "cancelled", _("Cancelled")
-
-
 class PaymentTransaction(models.Model):
-    """Payment transaction for OCTO payment gateway."""
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "В ожидании"
+        PREPARED = "PREPARED", "Подготовлено"
+        VERIFICATION_REQUIRED = "VERIFICATION_REQUIRED", "Требуется верификация"
+        PROCESSING = "PROCESSING", "В обработке"
+        SUCCESS = "SUCCESS", "Успешно"
+        FAILED = "FAILED", "Неуспешно"
+        CANCELLED = "CANCELLED", "Отменено"
+        REFUNDED = "REFUNDED", "Возвращено"
 
-    order = models.ForeignKey(
-        Order,
-        related_name="payment_transactions",
-        on_delete=models.CASCADE,
-    )
-    shop_transaction_id = models.CharField(
-        max_length=128,
-        unique=True,
-        help_text=_("Unique transaction ID on our side (shop_transaction_id)."),
-    )
-    octo_transaction_id = models.CharField(
-        max_length=128,
-        blank=True,
-        null=True,
-        help_text=_("Transaction ID from OCTO (id from prepare_payment response)."),
-    )
-    octo_payment_id = models.CharField(
-        max_length=128,
-        blank=True,
-        help_text=_("Payment ID from OCTO (id from verificationInfo response)."),
-    )
-    status = models.CharField(
-        max_length=32,
-        choices=PaymentTransactionStatus.choices,
-        default=PaymentTransactionStatus.PENDING,
-    )
-    payment_method = models.CharField(
-        max_length=32,
-        blank=True,
-        help_text=_("Payment method: bank_card, uzcard, humo"),
-    )
-    amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        help_text=_("Transaction amount in UZS."),
-    )
+    order = models.ForeignKey("Order", on_delete=models.CASCADE, related_name="payment_transactions")
+    shop_transaction_id = models.CharField(max_length=255, unique=True, db_index=True)
+    octo_transaction_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    octo_payment_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    status = models.CharField(max_length=50, choices=Status.choices, default=Status.PENDING)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3, default="UZS")
-    request_payload = models.JSONField(
-        blank=True,
-        null=True,
-        help_text=_("Request payload sent to OCTO."),
-    )
-    response_payload = models.JSONField(
-        blank=True,
-        null=True,
-        help_text=_("Response payload received from OCTO."),
-    )
-    error_code = models.IntegerField(
-        null=True,
-        blank=True,
-        help_text=_("Error code from OCTO if transaction failed."),
-    )
-    error_message = models.CharField(
-        max_length=512,
-        blank=True,
-        help_text=_("Error message from OCTO if transaction failed."),
-    )
-    verification_url = models.URLField(
-        blank=True,
-        help_text=_("URL for OTP verification form (for Visa/MC)."),
-    )
-    seconds_left = models.IntegerField(
-        null=True,
-        blank=True,
-        help_text=_("Seconds left for OTP verification."),
-    )
+    verification_url = models.URLField(max_length=500, blank=True, null=True)
+    seconds_left = models.PositiveIntegerField(blank=True, null=True)
+    error_code = models.CharField(max_length=100, blank=True, null=True)
+    error_message = models.TextField(blank=True, null=True)
+    request_payload = models.JSONField(default=dict, blank=True)
+    response_payload = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Octo Transaction {self.shop_transaction_id} for Order {self.order.public_id} - {self.status}"
 
     class Meta:
-        ordering = ("-created_at",)
         verbose_name = _("Payment transaction")
         verbose_name_plural = _("Payment transactions")
-        indexes = [
-            models.Index(fields=["shop_transaction_id"]),
-            models.Index(fields=["octo_transaction_id"]),
-            models.Index(fields=["status"]),
-        ]
-
-    def __str__(self) -> str:  # pragma: no cover
-        return f"Payment {self.shop_transaction_id} for {self.order.number}"

@@ -91,11 +91,12 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
         "status",
         "amount",
         "currency",
-        "payment_method",
+        "error_code",
+        "error_message",
         "created_at",
         "completed_at",
     )
-    list_filter = ("status", "currency", "payment_method", "created_at")
+    list_filter = ("status", "currency", "created_at")
     search_fields = (
         "shop_transaction_id",
         "octo_transaction_id",

@@ -1,14 +1,9 @@
-# General
-# ------------------------------------------------------------------------------
+# Django settings
+DJANGO_DEBUG=True
+DJANGO_SECRET_KEY=XRLRa8AP1BZOGXIY8udEK6GrioM5rWdLa623ZTsianfdscThRWwUv87ZKYI5rNQf
+DJANGO_EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
 USE_DOCKER=yes
-IPYTHONDIR=/app/.ipython
-# Redis
-# ------------------------------------------------------------------------------
-REDIS_URL=redis://redis:6379/0
+DJANGO_SETTINGS_MODULE=config.settings.local
 
-# Celery
-# ------------------------------------------------------------------------------
-
-# Flower
-CELERY_FLOWER_USER=debug
-CELERY_FLOWER_PASSWORD=debug
+# Database
+DATABASE_URL=postgresql://acham:acham123@postgres:5432/acham

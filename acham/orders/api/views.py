@@ -9,6 +9,7 @@ from acham.orders.api.serializers import (
     OrderDetailSerializer,
     OrderSummarySerializer,
     OrderCreateSerializer,
+    OrderUpdateSerializer,
 )
 from acham.orders.models import Order, OrderStatus
 
@@ -51,10 +52,15 @@ class OrderListView(OrderQuerySetMixin, generics.ListCreateAPIView):
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
-class OrderDetailView(OrderQuerySetMixin, generics.RetrieveAPIView):
+class OrderDetailView(OrderQuerySetMixin, generics.RetrieveUpdateAPIView):
     serializer_class = OrderDetailSerializer
     lookup_field = "public_id"
     lookup_url_kwarg = "order_id"
+
+    def get_serializer_class(self):
+        if self.request.method.upper() in ["PUT", "PATCH"]:
+            return OrderUpdateSerializer
+        return super().get_serializer_class()
 
 
 class OrderStatusListView(APIView):

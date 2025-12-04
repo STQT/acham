@@ -20,7 +20,6 @@ from acham.orders.models import (
     OrderStatus,
     OrderStatusHistory,
     PaymentTransaction,
-    PaymentTransactionStatus,
 )
 from acham.orders.services.octo_service import OctoService
 
@@ -52,10 +51,10 @@ class PaymentInitiateView(APIView):
         existing_payment = PaymentTransaction.objects.filter(
             order=order,
             status__in=[
-                PaymentTransactionStatus.PENDING,
-                PaymentTransactionStatus.PREPARED,
-                PaymentTransactionStatus.VERIFICATION_REQUIRED,
-                PaymentTransactionStatus.PROCESSING,
+                PaymentTransaction.Status.PENDING,
+                PaymentTransaction.Status.PREPARED,
+                PaymentTransaction.Status.VERIFICATION_REQUIRED,
+                PaymentTransaction.Status.PROCESSING,
             ],
         ).first()
 
@@ -117,15 +116,92 @@ class PaymentInitiateView(APIView):
                 language=language,
                 description=f"Order {order.number}",
             )
+            logger.info(f"OCTO prepare_payment request data: {{'shop_transaction_id': {shop_transaction_id}, 'total_sum': {order.total_amount}, 'user_data': {user_data}, 'basket': {basket}, 'return_url': {return_url}, 'notify_url': {notify_url}, 'language': {language}, 'description': 'Order {order.number}'}}")
+            logger.info(f"OCTO prepare_payment raw response: {octo_response}")
 
-            # Check for errors
+            # Check if response contains payment URL (success case)
+            # OCTO может возвращать error: 1, но при этом в data есть octo_pay_url - это успешный ответ
+            octo_data = octo_response.get("data", {})
+            octo_pay_url = octo_response.get("octo_pay_url") or octo_data.get("octo_pay_url")
+            
+            # Если есть octo_pay_url, это успешный ответ (даже если error: 1)
+            if octo_pay_url:
+                logger.info(f"OCTO prepare_payment success: payment URL received - {octo_pay_url}")
+                # Извлекаем transaction_id из URL или из ответа
+                # URL формат: https://pay2.octo.uz/pay/{transaction_id}
+                transaction_id_from_url = octo_pay_url.split('/')[-1] if octo_pay_url else None
+                octo_transaction_id = transaction_id_from_url or octo_data.get("id") or octo_data.get("octo_payment_UUID")
+                
+                # Проверяем, есть ли уже такая транзакция
+                existing_payment = PaymentTransaction.objects.filter(
+                    shop_transaction_id=shop_transaction_id
+                ).first()
+                
+                if existing_payment:
+                    # Обновляем существующую транзакцию
+                    existing_payment.octo_transaction_id = octo_transaction_id or existing_payment.octo_transaction_id
+                    existing_payment.verification_url = octo_pay_url
+                    existing_payment.response_payload = octo_response
+                    existing_payment.save()
+                    
+                    return Response(
+                        {
+                            "transaction_id": existing_payment.octo_transaction_id,
+                            "payment_id": existing_payment.octo_payment_id,
+                            "status": existing_payment.status,
+                            "verification_url": existing_payment.verification_url,
+                            "seconds_left": existing_payment.seconds_left,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+                
+                # Создаем новую транзакцию
+                payment_transaction = PaymentTransaction.objects.create(
+                    order=order,
+                    shop_transaction_id=shop_transaction_id,
+                    octo_transaction_id=octo_transaction_id,
+                    status=PaymentTransaction.Status.PREPARED,
+                    amount=order.total_amount,
+                    currency=order.currency,
+                    request_payload={"user_data": user_data, "basket": basket},
+                    response_payload=octo_response,
+                    verification_url=octo_pay_url,
+                )
+                
+                # Вызываем verification_info для получения дополнительной информации
+                if octo_transaction_id:
+                    try:
+                        verification_response = OctoService.verification_info(octo_transaction_id)
+                        if not verification_response.get("error"):
+                            verification_data = verification_response.get("data", {})
+                            payment_transaction.octo_payment_id = verification_data.get("id") or verification_data.get("octo_payment_UUID")
+                            payment_transaction.seconds_left = verification_data.get("secondsLeft") or verification_data.get("seconds_left")
+                            payment_transaction.save()
+                    except Exception as e:
+                        logger.warning(f"Could not get verification info: {e}")
+                
+                response_data = {
+                    "transaction_id": octo_transaction_id,
+                    "payment_id": payment_transaction.octo_payment_id,
+                    "status": payment_transaction.status,
+                    "verification_url": octo_pay_url,
+                }
+                
+                if payment_transaction.seconds_left:
+                    response_data["seconds_left"] = payment_transaction.seconds_left
+                
+                return Response(
+                    response_data,
+                    status=status.HTTP_201_CREATED,
+                )
+
+            # Check for errors (только если нет octo_pay_url)
             if octo_response.get("error"):
                 error_code = octo_response.get("error")
                 error_message = octo_response.get("errMessage", _("Payment preparation failed."))
                 logger.error(f"OCTO prepare_payment error: {error_code} - {error_message}")
 
                 # Check if payment already exists (OCTO returns this when payment was created by previous request)
-                octo_data = octo_response.get("data", {})
                 if "This payment was created by previous request" in error_message and octo_data:
                     # Payment already exists, try to find it or create it with OCTO data
                     octo_transaction_id = octo_data.get("id") or octo_data.get("octo_payment_UUID")
@@ -153,7 +229,7 @@ class PaymentInitiateView(APIView):
                             order=order,
                             shop_transaction_id=shop_transaction_id,
                             octo_transaction_id=octo_transaction_id,
-                            status=PaymentTransactionStatus.PREPARED,
+                            status=PaymentTransaction.Status.PREPARED,
                             amount=order.total_amount,
                             currency=order.currency,
                             request_payload={"user_data": user_data, "basket": basket},
@@ -172,7 +248,7 @@ class PaymentInitiateView(APIView):
                 payment_transaction = PaymentTransaction.objects.create(
                     order=order,
                     shop_transaction_id=shop_transaction_id,
-                    status=PaymentTransactionStatus.FAILED,
+                    status=PaymentTransaction.Status.FAILED,
                     amount=order.total_amount,
                     currency=order.currency,
                     request_payload={"user_data": user_data, "basket": basket},
@@ -192,23 +268,52 @@ class PaymentInitiateView(APIView):
             # Success - create payment transaction
             octo_data = octo_response.get("data", {})
             octo_transaction_id = octo_data.get("id") or octo_data.get("octo_payment_UUID")
+            octo_payment_id = octo_data.get("octo_payment_UUID") or octo_data.get("payment_id")
 
             payment_transaction = PaymentTransaction.objects.create(
                 order=order,
                 shop_transaction_id=shop_transaction_id,
                 octo_transaction_id=octo_transaction_id,
-                status=PaymentTransactionStatus.PREPARED,
+                octo_payment_id=octo_payment_id,
+                status=PaymentTransaction.Status.PREPARED,
                 amount=order.total_amount,
                 currency=order.currency,
                 request_payload={"user_data": user_data, "basket": basket},
                 response_payload=octo_response,
             )
 
+            # После prepare_payment вызываем verification_info для получения URL формы оплаты
+            # Это нужно для одностадийной оплаты через партнерский веб (на нашем сайте)
+            verification_response = OctoService.verification_info(octo_transaction_id)
+            
+            verification_url = None
+            seconds_left = None
+            
+            if not verification_response.get("error"):
+                verification_data = verification_response.get("data", {})
+                verification_url = verification_data.get("verification_url") or verification_data.get("verificationUrl")
+                seconds_left = verification_data.get("secondsLeft") or verification_data.get("seconds_left")
+                
+                # Обновляем payment_transaction с данными из verification_info
+                payment_transaction.verification_url = verification_url or ""
+                payment_transaction.seconds_left = seconds_left
+                payment_transaction.save()
+
+            response_data = {
+                "transaction_id": octo_transaction_id,
+                "payment_id": octo_payment_id,
+                "status": payment_transaction.status,
+            }
+
+            # Добавляем verification_url и seconds_left если они есть
+            # verification_url может быть использован для iframe или формы оплаты на нашем сайте
+            if verification_url:
+                response_data["verification_url"] = verification_url
+            if seconds_left is not None:
+                response_data["seconds_left"] = seconds_left
+
             return Response(
-                {
-                    "transaction_id": octo_transaction_id,
-                    "status": payment_transaction.status,
-                },
+                response_data,
                 status=status.HTTP_201_CREATED,
             )
 
@@ -282,7 +387,7 @@ class PaymentConfirmView(APIView):
             if octo_response.get("error"):
                 error_code = octo_response.get("error")
                 error_message = octo_response.get("errMessage", _("Payment failed."))
-                payment_transaction.status = PaymentTransactionStatus.FAILED
+                payment_transaction.status = PaymentTransaction.Status.FAILED
                 payment_transaction.error_code = error_code
                 payment_transaction.error_message = error_message
                 payment_transaction.save()
@@ -296,7 +401,7 @@ class PaymentConfirmView(APIView):
                 )
 
             # Success - get verification info
-            payment_transaction.status = PaymentTransactionStatus.PROCESSING
+            payment_transaction.status = PaymentTransaction.Status.PROCESSING
             payment_transaction.save()
 
             # Get verification info for OTP
@@ -307,7 +412,7 @@ class PaymentConfirmView(APIView):
                     payment_transaction.octo_payment_id = verification_data.get("id")
                     payment_transaction.verification_url = verification_data.get("verification_url", "")
                     payment_transaction.seconds_left = verification_data.get("secondsLeft")
-                    payment_transaction.status = PaymentTransactionStatus.VERIFICATION_REQUIRED
+                    payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
                     payment_transaction.save()
 
                     return Response(
@@ -332,7 +437,7 @@ class PaymentConfirmView(APIView):
 
         except Exception as e:
             logger.error(f"Error confirming payment: {e}", exc_info=True)
-            payment_transaction.status = PaymentTransactionStatus.FAILED
+            payment_transaction.status = PaymentTransaction.Status.FAILED
             payment_transaction.error_message = str(e)
             payment_transaction.save()
 
@@ -402,7 +507,7 @@ class PaymentVerifyOTPView(APIView):
                 )
 
             # Success - payment will be confirmed via webhook
-            payment_transaction.status = PaymentTransactionStatus.PROCESSING
+            payment_transaction.status = PaymentTransaction.Status.PROCESSING
             payment_transaction.save()
 
             return Response(
@@ -445,7 +550,7 @@ def payment_notify_view(request):
 
     with transaction.atomic():
         if payment_status == "success" or payload.get("error") == 0:
-            payment_transaction.status = PaymentTransactionStatus.SUCCESS
+            payment_transaction.status = PaymentTransaction.Status.SUCCESS
             payment_transaction.completed_at = timezone.now()
 
             # Update order status
@@ -464,7 +569,7 @@ def payment_notify_view(request):
                 )
 
         elif payment_status == "failed" or payload.get("error"):
-            payment_transaction.status = PaymentTransactionStatus.FAILED
+            payment_transaction.status = PaymentTransaction.Status.FAILED
             payment_transaction.error_code = payload.get("error")
             payment_transaction.error_message = payload.get("errMessage", _("Payment failed"))
             payment_transaction.completed_at = timezone.now()

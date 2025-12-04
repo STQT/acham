@@ -161,6 +161,46 @@ class OrderAddressInputSerializer(serializers.Serializer):
     company = serializers.CharField(required=False, allow_blank=True, max_length=255)
 
 
+class OrderUpdateSerializer(serializers.Serializer):
+    shipping_address = OrderAddressInputSerializer(required=False)
+    billing_address = OrderAddressInputSerializer(required=False)
+    payment_method = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    shipping_method = serializers.CharField(max_length=64, required=False, allow_blank=True)
+    shipping_amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    discount_amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
+    customer_email = serializers.EmailField(required=False, allow_blank=True)
+    customer_phone = serializers.CharField(required=False, allow_blank=True, max_length=64)
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+    def update(self, instance, validated_data):
+        shipping_address_data = validated_data.pop("shipping_address", None)
+        billing_address_data = validated_data.pop("billing_address", None)
+
+        with transaction.atomic():
+            # Update order fields
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+
+            # Update shipping address
+            if shipping_address_data:
+                OrderAddress.objects.update_or_create(
+                    order=instance,
+                    address_type=OrderAddress.AddressType.SHIPPING,
+                    defaults=shipping_address_data,
+                )
+
+            # Update billing address
+            if billing_address_data:
+                OrderAddress.objects.update_or_create(
+                    order=instance,
+                    address_type=OrderAddress.AddressType.BILLING,
+                    defaults=billing_address_data,
+                )
+
+            instance.save()
+            return instance
+
+
 class OrderCreateSerializer(serializers.Serializer):
     payment_method = serializers.CharField(max_length=64, required=False, allow_blank=True)
     shipping_method = serializers.CharField(max_length=64, required=False, allow_blank=True)
