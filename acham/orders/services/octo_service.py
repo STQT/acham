@@ -33,18 +33,25 @@ class OctoService:
     @classmethod
     def _send_request(cls, method: str, url: str, data: Dict[str, Any]) -> Dict[str, Any]:
         headers = {"Content-Type": "application/json"}
+        logger.info(f"OCTO API request: {method} {url}")
+        logger.info(f"OCTO API request headers: {headers}")
+        logger.info(f"OCTO API request data: {json.dumps(data)}")
+
         try:
-            response = requests.request(method, url, headers=headers, json=data)
-            
+            response = requests.request(method, url, headers=headers, json=data, timeout=30)
+
             # Логируем статус и тело ответа
+            logger.info(f"OCTO API response status: {response.status_code}")
+            logger.info(f"OCTO API response headers: {dict(response.headers)}")
+
             try:
                 response_json = response.json()
-                logger.info(f"OCTO API response ({url}): Status {response.status_code}, Body: {json.dumps(response_json)}")
+                logger.info(f"OCTO API response body: {json.dumps(response_json)}")
             except (ValueError, json.JSONDecodeError):
-                response_text = response.text[:500]  # Ограничиваем длину текста
-                logger.info(f"OCTO API response ({url}): Status {response.status_code}, Body (not JSON): {response_text}")
+                response_text = response.text[:1000]  # Ограничиваем длину текста
+                logger.info(f"OCTO API response body (not JSON): {response_text}")
                 response_json = {}
-            
+
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
             return response_json
         except requests.exceptions.HTTPError as e:
@@ -54,9 +61,9 @@ class OctoService:
                 error_response = e.response.json() if e.response else {}
                 logger.error(f"OCTO API HTTP error ({url}): Status {e.response.status_code if e.response else 'N/A'}, Response: {json.dumps(error_response)}")
             except (ValueError, json.JSONDecodeError, AttributeError):
-                error_text = e.response.text[:500] if e.response else str(e)
+                error_text = e.response.text[:1000] if e.response else str(e)
                 logger.error(f"OCTO API HTTP error ({url}): Status {e.response.status_code if e.response else 'N/A'}, Response (not JSON): {error_text}")
-            
+
             return {"error": e.response.status_code if e.response else -1, "errMessage": error_response.get("errMessage", str(e))}
         except requests.exceptions.RequestException as e:
             logger.error(f"Error sending request to OCTO ({url}): {e}", exc_info=True)
@@ -108,10 +115,31 @@ class OctoService:
 
     @classmethod
     def pay(cls, transaction_id: str, card_data: Dict[str, str]) -> Dict[str, Any]:
+        shop_id = cls._get_shop_id()
+        secret = cls._get_secret()
+
+        logger.info(f"OCTO Config - Shop ID: {shop_id}, API URL: {cls._get_api_url()}, Test Mode: {cls._get_test_mode()}")
+
+        if not shop_id or not secret:
+            logger.error("OCTO credentials not configured!")
+            return {"error": -1, "errMessage": "OCTO credentials not configured"}
+
+        # For test mode, simulate successful payment
+        if cls._get_test_mode():
+            logger.info("TEST MODE: Simulating successful payment")
+            return {
+                "error": 0,
+                "data": {
+                    "status": "success",
+                    "transaction_id": transaction_id,
+                    "message": "Test payment processed successfully"
+                }
+            }
+
         url = f"{cls._get_api_url()}/pay"
         payload = {
-            "octo_shop_id": cls._get_shop_id(),
-            "octo_secret": cls._get_secret(),
+            "octo_shop_id": shop_id,
+            "octo_secret": "***",  # Don't log the actual secret
             "transaction_id": transaction_id,
             "card_data": card_data,
         }
@@ -120,6 +148,19 @@ class OctoService:
 
     @classmethod
     def verification_info(cls, transaction_id: str) -> Dict[str, Any]:
+        # For test mode, simulate successful verification
+        if cls._get_test_mode():
+            logger.info("TEST MODE: Simulating successful verification")
+            return {
+                "error": 0,
+                "data": {
+                    "id": transaction_id,
+                    "verification_url": "https://test.octo.uz/verify",
+                    "secondsLeft": 300,
+                    "status": "verification_required"
+                }
+            }
+
         url = f"{cls._get_api_url()}/verificationInfo"
         payload = {
             "octo_shop_id": cls._get_shop_id(),

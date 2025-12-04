@@ -127,13 +127,20 @@ class PaymentInitiateView(APIView):
             # OCTO может возвращать error: 1, но при этом в data есть octo_pay_url - это успешный ответ
             octo_data = octo_response.get("data", {})
             octo_pay_url = octo_response.get("octo_pay_url") or octo_data.get("octo_pay_url")
-            
+
             # Если есть octo_pay_url, это успешный ответ (даже если error: 1)
             if octo_pay_url:
                 logger.info(f"OCTO prepare_payment success: payment URL received - {octo_pay_url}")
-                # Извлекаем transaction_id из URL или из ответа
+                # Извлекаем transaction_id из URL
                 # URL формат: https://pay2.octo.uz/pay/{transaction_id}
                 transaction_id_from_url = octo_pay_url.split('/')[-1] if octo_pay_url else None
+
+                if not transaction_id_from_url:
+                    logger.error("OCTO prepare_payment error: Could not extract transaction_id from URL")
+                    return Response(
+                        {"error": _("Failed to extract transaction ID from payment URL.")},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
                 octo_transaction_id = transaction_id_from_url or octo_data.get("id") or octo_data.get("octo_payment_UUID")
                 
                 # Проверяем, есть ли уже такая транзакция
@@ -408,62 +415,80 @@ class PaymentConfirmView(APIView):
             payment_transaction.status = PaymentTransaction.Status.PROCESSING
             payment_transaction.save()
 
-            # Get verification info for OTP
+            # Get verification info for OTP (optional for test mode)
             try:
                 verification_response = OctoService.verification_info(transaction_id)
 
                 if verification_response.get("error"):
-                    # Handle verification error
-                    error_code = verification_response.get("error")
-                    error_message = verification_response.get("errMessage", _("Failed to get verification info."))
-                    payment_transaction.status = PaymentTransaction.Status.FAILED
-                    payment_transaction.error_code = error_code
-                    payment_transaction.error_message = error_message
+                    logger.warning(f"Verification info failed: {verification_response}")
+                    # For test mode or if verification fails, skip to pay
+                    if OctoService._get_test_mode():
+                        logger.info("Test mode: skipping verification, proceeding to pay")
+                    else:
+                        # In production, this would be an error
+                        error_code = verification_response.get("error")
+                        error_message = verification_response.get("errMessage", _("Failed to get verification info."))
+                        payment_transaction.status = PaymentTransaction.Status.FAILED
+                        payment_transaction.error_code = error_code
+                        payment_transaction.error_message = error_message
+                        payment_transaction.save()
+
+                        return Response(
+                            {
+                                "error": error_message,
+                                "error_code": error_code,
+                            },
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                else:
+                    verification_data = verification_response.get("data", {})
+                    seconds_left = verification_data.get("secondsLeft")
+
+                    # According to OCTO docs, if secondsLeft is 0, verification failed
+                    if seconds_left == 0:
+                        if OctoService._get_test_mode():
+                            logger.warning("Test mode: secondsLeft is 0, proceeding anyway")
+                        else:
+                            payment_transaction.status = PaymentTransaction.Status.FAILED
+                            payment_transaction.error_message = _("Payment verification failed - no time left for OTP.")
+                            payment_transaction.save()
+
+                            return Response(
+                                {
+                                    "error": _("Payment verification failed - OTP timeout."),
+                                },
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+
+                    payment_transaction.octo_payment_id = verification_data.get("id")
+                    payment_transaction.verification_url = verification_data.get("verification_url", "")
+                    payment_transaction.seconds_left = seconds_left
+                    payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
                     payment_transaction.save()
 
                     return Response(
                         {
-                            "error": error_message,
-                            "error_code": error_code,
+                            "payment_id": payment_transaction.octo_payment_id,
+                            "verification_url": payment_transaction.verification_url,
+                            "seconds_left": payment_transaction.seconds_left,
+                            "status": payment_transaction.status,
                         },
-                        status=status.HTTP_400_BAD_REQUEST,
+                        status=status.HTTP_200_OK,
                     )
-
-                verification_data = verification_response.get("data", {})
-                seconds_left = verification_data.get("secondsLeft")
-
-                # According to OCTO docs, if secondsLeft is 0, verification failed
-                if seconds_left == 0:
-                    payment_transaction.status = PaymentTransaction.Status.FAILED
-                    payment_transaction.error_message = _("Payment verification failed - no time left for OTP.")
-                    payment_transaction.save()
-
-                    return Response(
-                        {
-                            "error": _("Payment verification failed - OTP timeout."),
-                        },
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                payment_transaction.octo_payment_id = verification_data.get("id")
-                payment_transaction.verification_url = verification_data.get("verification_url", "")
-                payment_transaction.seconds_left = seconds_left
-                payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
-                payment_transaction.save()
-
-                return Response(
-                    {
-                        "payment_id": payment_transaction.octo_payment_id,
-                        "verification_url": payment_transaction.verification_url,
-                        "seconds_left": payment_transaction.seconds_left,
-                        "status": payment_transaction.status,
-                    },
-                    status=status.HTTP_200_OK,
-                )
             except Exception as e:
                 logger.warning(f"Could not get verification info: {e}")
-                # Don't fail the whole payment if verification info fails
-                # Continue with processing status
+
+            # If verification failed or was skipped, proceed with payment processing
+            payment_transaction.status = PaymentTransaction.Status.PROCESSING
+            payment_transaction.save()
+
+            return Response(
+                {
+                    "status": payment_transaction.status,
+                    "message": _("Payment is being processed."),
+                },
+                status=status.HTTP_200_OK,
+            )
 
             return Response(
                 {
