@@ -5,7 +5,7 @@ from acham.orders.api.payment_views import (
     PaymentConfirmView,
     PaymentVerifyOTPView,
     PaymentStatusView,
-    payment_notify_view,
+    payment_notify,
 )
 from acham.orders.api.views import OrderDetailView, OrderListView, OrderStatusListView
 

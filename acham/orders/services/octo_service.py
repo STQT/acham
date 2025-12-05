@@ -84,10 +84,18 @@ class OctoService:
         ttl: int = 15, # minutes
         init_time: str = None,
     ) -> Dict[str, Any]:
+        shop_id = cls._get_shop_id()
+        secret = cls._get_secret()
+
+        # If credentials are not configured (placeholders), use test mode simulation
+        if shop_id == "YOUR_ACTUAL_OCTO_SHOP_ID" or secret == "YOUR_ACTUAL_OCTO_SECRET":
+            logger.info("OCTO credentials not configured, using test mode simulation")
+            return cls._simulate_prepare_payment(shop_transaction_id, total_sum, return_url)
+
         url = f"{cls._get_api_url()}/prepare_payment"
         payload = {
-            "octo_shop_id": cls._get_shop_id(),
-            "octo_secret": cls._get_secret(),
+            "octo_shop_id": shop_id,
+            "octo_secret": secret,
             "shop_transaction_id": shop_transaction_id,
             "auto_capture": auto_capture,
             "test": cls._get_test_mode(),
@@ -114,6 +122,21 @@ class OctoService:
         return cls._send_request("POST", url, payload)
 
     @classmethod
+    def _simulate_prepare_payment(cls, shop_transaction_id: str, total_sum: Decimal, return_url: str) -> Dict[str, Any]:
+        """Simulate OCTO prepare_payment response for testing without real credentials"""
+        import uuid
+        transaction_id = str(uuid.uuid4())
+
+        return {
+            "error": 1,  # OCTO returns error: 1 but still provides payment URL
+            "data": {
+                "octo_pay_url": f"https://pay2.octo.uz/pay/{transaction_id}"
+            },
+            "octo_pay_url": f"https://pay2.octo.uz/pay/{transaction_id}",
+            "apiMessageForDevelopers": "Test mode simulation - credentials not configured"
+        }
+
+    @classmethod
     def pay(cls, transaction_id: str, card_data: Dict[str, str]) -> Dict[str, Any]:
         shop_id = cls._get_shop_id()
         secret = cls._get_secret()
@@ -124,17 +147,35 @@ class OctoService:
             logger.error("OCTO credentials not configured!")
             return {"error": -1, "errMessage": "OCTO credentials not configured"}
 
-        # For test mode, simulate successful payment
+        # For test mode, simulate different payment flows based on card type
         if cls._get_test_mode():
-            logger.info("TEST MODE: Simulating successful payment")
-            return {
-                "error": 0,
-                "data": {
-                    "status": "success",
-                    "transaction_id": transaction_id,
-                    "message": "Test payment processed successfully"
+            logger.info("TEST MODE: Simulating payment processing")
+            card_number = card_data.get("card_number", "")
+
+            # Simulate different behaviors:
+            # - For cards starting with 4: Visa/MC flow (redirect to OTP form)
+            # - For other cards: Uzcard/Humo flow (SMS OTP)
+            if card_number.startswith("4"):
+                # Visa/MC - OCTO returns redirect URL for OTP form
+                return {
+                    "error": 0,
+                    "data": {
+                        "status": "otp_required",
+                        "transaction_id": transaction_id,
+                        "otp_url": "https://pay2.octo.uz/otp-form",
+                        "message": "Redirect to OCTO OTP form"
+                    }
                 }
-            }
+            else:
+                # Uzcard/Humo - proceed to verification for SMS OTP
+                return {
+                    "error": 0,
+                    "data": {
+                        "status": "processing",
+                        "transaction_id": transaction_id,
+                        "message": "Payment initiated, waiting for OTP verification"
+                    }
+                }
 
         url = f"{cls._get_api_url()}/pay"
         payload = {
@@ -148,15 +189,18 @@ class OctoService:
 
     @classmethod
     def verification_info(cls, transaction_id: str) -> Dict[str, Any]:
-        # For test mode, simulate successful verification
+        # For test mode, simulate verification based on card type
         if cls._get_test_mode():
-            logger.info("TEST MODE: Simulating successful verification")
+            logger.info("TEST MODE: Simulating verification")
+            # Simulate different behaviors based on card type or random choice
+            # For Uzcard/Humo: SMS OTP
+            # For Visa/MC: redirect URL
             return {
                 "error": 0,
                 "data": {
                     "id": transaction_id,
-                    "verification_url": "https://test.octo.uz/verify",
-                    "secondsLeft": 300,
+                    "verification_url": None,  # For SMS OTP, no redirect URL
+                    "secondsLeft": 300,  # 5 minutes for OTP
                     "status": "verification_required"
                 }
             }
@@ -172,6 +216,26 @@ class OctoService:
 
     @classmethod
     def check_sms_key(cls, transaction_id: str, sms_key: str) -> Dict[str, Any]:
+        # For test mode, simulate SMS verification
+        if cls._get_test_mode():
+            logger.info("TEST MODE: Simulating SMS verification")
+            # Simulate successful verification for '123456', failed for others
+            if sms_key == '123456':
+                return {
+                    "error": 0,
+                    "data": {
+                        "status": "success",
+                        "transaction_id": transaction_id,
+                        "message": "OTP verified successfully"
+                    }
+                }
+            else:
+                return {
+                    "error": 1,
+                    "errMessage": "Неверный SMS код",
+                    "data": None
+                }
+
         url = f"{cls._get_api_url()}/check_sms_key"
         payload = {
             "octo_shop_id": cls._get_shop_id(),

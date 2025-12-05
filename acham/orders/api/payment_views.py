@@ -91,8 +91,11 @@ class PaymentInitiateView(APIView):
             "email": order.customer_email or (request.user.email or ""),
         }
 
-        # Generate shop transaction ID
-        shop_transaction_id = order.number
+        # Generate unique shop transaction ID
+        import uuid
+        timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+        unique_id = str(uuid.uuid4())[:8].upper()
+        shop_transaction_id = f"ACH-{timestamp}-{unique_id}"
 
         # Build return and notify URLs
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:4200")
@@ -411,19 +414,59 @@ class PaymentConfirmView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Success - get verification info
+            # Handle different payment flows based on OCTO response or card type
+            pay_data = octo_response.get("data", {})
+            payment_status = pay_data.get("status")
+
+            # Determine flow based on card type or OCTO response
+            card_number = card_data.get("card_number", "")
+            is_visa_mc = card_number.startswith("4") or card_number.startswith("5")
+
+            if payment_status == "otp_required" or (is_visa_mc and OctoService._get_test_mode()):
+                # Visa/MC flow: OCTO provides OTP form URL
+                otp_url = pay_data.get("otp_url", "https://pay2.octo.uz/otp-form")
+                payment_transaction.octo_payment_id = pay_data.get("id", transaction_id)
+                payment_transaction.verification_url = otp_url
+                payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
+                payment_transaction.save()
+
+                return Response(
+                    {
+                        "payment_id": payment_transaction.octo_payment_id,
+                        "verification_url": payment_transaction.verification_url,
+                        "status": payment_transaction.status,
+                        "flow": "redirect",  # Indicates redirect to OCTO OTP form
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            # Uzcard/Humo flow or default: proceed with verification for SMS OTP
             payment_transaction.status = PaymentTransaction.Status.PROCESSING
             payment_transaction.save()
 
-            # Get verification info for OTP (optional for test mode)
+            # Get verification info for OTP
             try:
                 verification_response = OctoService.verification_info(transaction_id)
 
                 if verification_response.get("error"):
                     logger.warning(f"Verification info failed: {verification_response}")
-                    # For test mode or if verification fails, skip to pay
                     if OctoService._get_test_mode():
-                        logger.info("Test mode: skipping verification, proceeding to pay")
+                        logger.info("Test mode: verification failed, but proceeding")
+                        # In test mode, still require OTP verification
+                        payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
+                        payment_transaction.seconds_left = 300  # 5 minutes
+                        payment_transaction.save()
+
+                        return Response(
+                            {
+                                "payment_id": transaction_id,
+                                "verification_url": None,
+                                "seconds_left": 300,
+                                "status": payment_transaction.status,
+                                "flow": "sms",  # SMS OTP flow
+                            },
+                            status=status.HTTP_200_OK,
+                        )
                     else:
                         # In production, this would be an error
                         error_code = verification_response.get("error")
@@ -442,12 +485,13 @@ class PaymentConfirmView(APIView):
                         )
                 else:
                     verification_data = verification_response.get("data", {})
-                    seconds_left = verification_data.get("secondsLeft")
+                    seconds_left = verification_data.get("secondsLeft", 300)
 
                     # According to OCTO docs, if secondsLeft is 0, verification failed
                     if seconds_left == 0:
                         if OctoService._get_test_mode():
                             logger.warning("Test mode: secondsLeft is 0, proceeding anyway")
+                            seconds_left = 300  # Reset for test mode
                         else:
                             payment_transaction.status = PaymentTransaction.Status.FAILED
                             payment_transaction.error_message = _("Payment verification failed - no time left for OTP.")
@@ -460,8 +504,8 @@ class PaymentConfirmView(APIView):
                                 status=status.HTTP_400_BAD_REQUEST,
                             )
 
-                    payment_transaction.octo_payment_id = verification_data.get("id")
-                    payment_transaction.verification_url = verification_data.get("verification_url", "")
+                    payment_transaction.octo_payment_id = verification_data.get("id", transaction_id)
+                    payment_transaction.verification_url = verification_data.get("verification_url")
                     payment_transaction.seconds_left = seconds_left
                     payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
                     payment_transaction.save()
@@ -472,16 +516,30 @@ class PaymentConfirmView(APIView):
                             "verification_url": payment_transaction.verification_url,
                             "seconds_left": payment_transaction.seconds_left,
                             "status": payment_transaction.status,
+                            "flow": "sms",  # SMS OTP flow
                         },
                         status=status.HTTP_200_OK,
                     )
             except Exception as e:
                 logger.warning(f"Could not get verification info: {e}")
+                if OctoService._get_test_mode():
+                    # In test mode, provide default OTP verification
+                    payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
+                    payment_transaction.seconds_left = 300
+                    payment_transaction.save()
 
-            # If verification failed or was skipped, proceed with payment processing
-            payment_transaction.status = PaymentTransaction.Status.PROCESSING
-            payment_transaction.save()
+                    return Response(
+                        {
+                            "payment_id": transaction_id,
+                            "verification_url": None,
+                            "seconds_left": 300,
+                            "status": payment_transaction.status,
+                            "flow": "sms",
+                        },
+                        status=status.HTTP_200_OK,
+                    )
 
+            # If all else fails, return processing status
             return Response(
                 {
                     "status": payment_transaction.status,
@@ -591,7 +649,7 @@ class PaymentVerifyOTPView(APIView):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
-def payment_notify_view(request):
+def payment_notify(request):
     """Webhook endpoint for OCTO payment notifications."""
     payload = request.data
     logger.info(f"OCTO webhook received: {payload}")
