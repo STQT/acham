@@ -424,7 +424,15 @@ class PaymentConfirmView(APIView):
 
             if payment_status == "otp_required" or (is_visa_mc and OctoService._get_test_mode()):
                 # Visa/MC flow: OCTO provides OTP form URL
-                otp_url = pay_data.get("otp_url", "https://pay2.octo.uz/otp-form")
+                otp_url = pay_data.get("otp_url")
+                # If OCTO didn't provide otp_url, construct it with transaction_id
+                if not otp_url:
+                    # Get language from request or default to 'uz'
+                    language = request.GET.get("language", "uz")
+                    if language not in ["uz", "ru", "en"]:
+                        language = "uz"
+                    # Construct OTP form URL with transaction_id and language
+                    otp_url = f"https://pay2.octo.uz/otp-form/{transaction_id}?language={language}"
                 payment_transaction.octo_payment_id = pay_data.get("id", transaction_id)
                 payment_transaction.verification_url = otp_url
                 payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED

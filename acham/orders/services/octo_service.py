@@ -157,12 +157,14 @@ class OctoService:
             # - For other cards: Uzcard/Humo flow (SMS OTP)
             if card_number.startswith("4"):
                 # Visa/MC - OCTO returns redirect URL for OTP form
+                # Construct OTP form URL with transaction_id (test mode uses 'uz' language by default)
+                otp_url = f"https://pay2.octo.uz/otp-form/{transaction_id}?language=uz"
                 return {
                     "error": 0,
                     "data": {
                         "status": "otp_required",
                         "transaction_id": transaction_id,
-                        "otp_url": "https://pay2.octo.uz/otp-form",
+                        "otp_url": otp_url,
                         "message": "Redirect to OCTO OTP form"
                     }
                 }
