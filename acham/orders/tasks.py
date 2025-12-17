@@ -7,6 +7,7 @@ from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
 from acham.orders.models import Order
@@ -16,8 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3)
-def send_order_confirmation_email(self, order_id: int) -> dict[str, Any]:
-    """Send email notification when order is confirmed."""
+def send_order_confirmation_email(self, order_id: int, language: str | None = None) -> dict[str, Any]:
+    """Send email notification when order is confirmed.
+    
+    Args:
+        order_id: Order ID
+        language: Language code (uz, ru, en). If None, uses default from settings.
+    """
     try:
         order = Order.objects.select_related("user").prefetch_related("items").get(pk=order_id)
     except Order.DoesNotExist:
@@ -31,31 +37,48 @@ def send_order_confirmation_email(self, order_id: int) -> dict[str, Any]:
         logger.warning(f"No email found for order {order.number}")
         return {"status": "skipped", "message": "No email address available"}
 
+    # Determine language
+    if not language:
+        # Try to get from order metadata or user preference, fallback to default
+        language = getattr(settings, "LANGUAGE_CODE", "ru")[:2]  # Get first 2 chars (ru from ru-RU)
+    
+    # Validate language code
+    available_languages = ["uz", "ru", "en"]
+    if language not in available_languages:
+        language = "ru"  # Default fallback
+
     try:
-        # Prepare email context
-        context = {
-            "order": order,
-            "order_items": order.items.all(),
-            "site_name": getattr(settings, "SITE_NAME", "ACHAM Collection"),
-        }
+        # Activate language for translation
+        translation.activate(language)
+        
+        try:
+            # Prepare email context
+            context = {
+                "order": order,
+                "order_items": order.items.all(),
+                "site_name": getattr(settings, "SITE_NAME", "ACHAM Collection"),
+            }
 
-        # Render email template
-        subject = _("Order Confirmation - {order_number}").format(order_number=order.number)
-        message = render_to_string("orders/emails/order_confirmation.txt", context)
-        html_message = render_to_string("orders/emails/order_confirmation.html", context)
+            # Render email template
+            subject = _("Order Confirmation - {order_number}").format(order_number=order.number)
+            message = render_to_string("orders/emails/order_confirmation.txt", context)
+            html_message = render_to_string("orders/emails/order_confirmation.html", context)
 
-        # Send email
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            html_message=html_message,
-            fail_silently=False,
-        )
+            # Send email
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                html_message=html_message,
+                fail_silently=False,
+            )
 
-        logger.info(f"Order confirmation email sent to {email} for order {order.number}")
-        return {"status": "success", "email": email, "order_number": order.number}
+            logger.info(f"Order confirmation email sent to {email} for order {order.number} (language: {language})")
+            return {"status": "success", "email": email, "order_number": order.number, "language": language}
+        finally:
+            # Deactivate language
+            translation.deactivate()
 
     except Exception as exc:
         logger.error(f"Failed to send order confirmation email: {exc}", exc_info=True)
@@ -64,8 +87,13 @@ def send_order_confirmation_email(self, order_id: int) -> dict[str, Any]:
 
 
 @shared_task(bind=True, max_retries=3)
-def send_order_confirmation_sms(self, order_id: int) -> dict[str, Any]:
-    """Send SMS notification when order is confirmed."""
+def send_order_confirmation_sms(self, order_id: int, language: str | None = None) -> dict[str, Any]:
+    """Send SMS notification when order is confirmed.
+    
+    Args:
+        order_id: Order ID
+        language: Language code (uz, ru, en). If None, uses default from settings.
+    """
     try:
         order = Order.objects.select_related("user").prefetch_related("items").get(pk=order_id)
     except Order.DoesNotExist:
@@ -79,27 +107,44 @@ def send_order_confirmation_sms(self, order_id: int) -> dict[str, Any]:
         logger.warning(f"No phone found for order {order.number}")
         return {"status": "skipped", "message": "No phone number available"}
 
+    # Determine language
+    if not language:
+        # Try to get from order metadata or user preference, fallback to default
+        language = getattr(settings, "LANGUAGE_CODE", "ru")[:2]  # Get first 2 chars (ru from ru-RU)
+    
+    # Validate language code
+    available_languages = ["uz", "ru", "en"]
+    if language not in available_languages:
+        language = "ru"  # Default fallback
+
     try:
-        # Initialize SMS client
-        sms_client = EskizSMSClient()
+        # Activate language for translation
+        translation.activate(language)
+        
+        try:
+            # Initialize SMS client
+            sms_client = EskizSMSClient()
 
-        # Prepare SMS message
-        site_name = getattr(settings, "SITE_NAME", "ACHAM Collection")
-        message = _(
-            "Your order {order_number} has been confirmed. "
-            "Total amount: {total_amount} {currency}. "
-            "Thank you for your purchase!"
-        ).format(
-            order_number=order.number,
-            total_amount=order.total_amount,
-            currency=order.currency,
-        )
+            # Prepare SMS message with translation
+            # This will be translated based on the activated language
+            message = _(
+                "Your order {order_number} has been confirmed. "
+                "Total amount: {total_amount} {currency}. "
+                "Thank you for your purchase!"
+            ).format(
+                order_number=order.number,
+                total_amount=order.total_amount,
+                currency=order.currency,
+            )
 
-        # Send SMS
-        result = sms_client.send_sms(phone=phone, message=message)
+            # Send SMS
+            result = sms_client.send_sms(phone=phone, message=message)
 
-        logger.info(f"Order confirmation SMS sent to {phone} for order {order.number}")
-        return {"status": "success", "phone": phone, "order_number": order.number, "result": result}
+            logger.info(f"Order confirmation SMS sent to {phone} for order {order.number} (language: {language})")
+            return {"status": "success", "phone": phone, "order_number": order.number, "language": language, "result": result}
+        finally:
+            # Deactivate language
+            translation.deactivate()
 
     except EskizConfigurationError as exc:
         logger.error(f"Eskiz not configured: {exc}")
@@ -115,10 +160,14 @@ def send_order_confirmation_sms(self, order_id: int) -> dict[str, Any]:
 
 
 @shared_task(bind=True, max_retries=3)
-def send_order_notification(self, order_id: int) -> dict[str, Any]:
+def send_order_notification(self, order_id: int, language: str | None = None) -> dict[str, Any]:
     """
     Send order confirmation notification via email or SMS.
     Prioritizes email if available, otherwise sends SMS.
+    
+    Args:
+        order_id: Order ID
+        language: Language code (uz, ru, en). If None, uses default from settings.
     """
     try:
         order = Order.objects.select_related("user").prefetch_related("items").get(pk=order_id)
@@ -130,14 +179,24 @@ def send_order_notification(self, order_id: int) -> dict[str, Any]:
     email = order.customer_email or (order.user.email if order.user else None)
     phone = order.customer_phone or (order.user.phone if order.user else None)
 
+    # Determine language if not provided
+    if not language:
+        # Try to get from order metadata (if stored) or use default
+        language = getattr(settings, "LANGUAGE_CODE", "ru")[:2]
+    
+    # Validate language code
+    available_languages = ["uz", "ru", "en"]
+    if language not in available_languages:
+        language = "ru"  # Default fallback
+
     results = {}
 
     # Send email if available
     if email:
         try:
-            email_task = send_order_confirmation_email.delay(order_id)
-            results["email"] = {"status": "queued", "task_id": str(email_task.id)}
-            logger.info(f"Order confirmation email queued for order {order.number}, task ID: {email_task.id}")
+            email_task = send_order_confirmation_email.delay(order_id, language=language)
+            results["email"] = {"status": "queued", "task_id": str(email_task.id), "language": language}
+            logger.info(f"Order confirmation email queued for order {order.number}, task ID: {email_task.id}, language: {language}")
         except Exception as exc:
             logger.error(f"Failed to queue email notification: {exc}")
             results["email"] = {"status": "error", "message": str(exc)}
@@ -145,9 +204,9 @@ def send_order_notification(self, order_id: int) -> dict[str, Any]:
         # Send SMS if no email but phone is available
         if phone:
             try:
-                sms_task = send_order_confirmation_sms.delay(order_id)
-                results["sms"] = {"status": "queued", "task_id": str(sms_task.id)}
-                logger.info(f"Order confirmation SMS queued for order {order.number}, task ID: {sms_task.id}")
+                sms_task = send_order_confirmation_sms.delay(order_id, language=language)
+                results["sms"] = {"status": "queued", "task_id": str(sms_task.id), "language": language}
+                logger.info(f"Order confirmation SMS queued for order {order.number}, task ID: {sms_task.id}, language: {language}")
             except Exception as exc:
                 logger.error(f"Failed to queue SMS notification: {exc}")
                 results["sms"] = {"status": "error", "message": str(exc)}
@@ -155,5 +214,5 @@ def send_order_notification(self, order_id: int) -> dict[str, Any]:
             logger.warning(f"No contact information available for order {order.number}")
             return {"status": "skipped", "message": "No email or phone available"}
 
-    return {"status": "queued", "order_number": order.number, "results": results}
+    return {"status": "queued", "order_number": order.number, "language": language, "results": results}
 

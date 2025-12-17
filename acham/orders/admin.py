@@ -126,7 +126,6 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
         (_("Status"), {
             "fields": (
                 "status",
-                "payment_method",
                 "error_code",
                 "error_message",
             )
