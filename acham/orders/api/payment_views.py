@@ -107,8 +107,10 @@ class PaymentInitiateView(APIView):
         if language not in ["uz", "ru", "en"]:
             language = "uz"
 
-        # Get current time in OCTO format for init_time
-        init_time = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Get current time in OCTO format for init_time using TIME_ZONE from settings
+        # timezone.localtime() automatically uses settings.TIME_ZONE
+        local_time = timezone.localtime(timezone.now())
+        init_time = local_time.strftime("%Y-%m-%d %H:%M:%S")
 
         try:
             # Call OCTO prepare_payment

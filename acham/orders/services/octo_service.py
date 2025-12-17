@@ -70,7 +70,7 @@ class OctoService:
             return {"error": -1, "errMessage": str(e)}
 
     @classmethod
-    def prepare_payment(
+    def (
         cls,
         shop_transaction_id: str,
         total_sum: Decimal,
