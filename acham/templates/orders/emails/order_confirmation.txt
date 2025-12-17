@@ -1,0 +1,31 @@
+{{ site_name }}
+Подтверждение заказа
+
+Здравствуйте!
+
+Ваш заказ {{ order.number }} успешно подтвержден и принят в обработку.
+
+Информация о заказе:
+- Номер заказа: {{ order.number }}
+- Дата заказа: {{ order.placed_at|date:"d.m.Y H:i" }}
+- Статус: {{ order.get_status_display }}
+
+Товары в заказе:
+{% for item in order_items %}
+- {{ item.product_name }}
+  Количество: {{ item.quantity }} × {{ item.unit_price }} {{ order.currency }}
+  Итого: {{ item.total_price }} {{ order.currency }}
+{% endfor %}
+
+Итоговая сумма:
+- Подытог: {{ order.subtotal_amount }} {{ order.currency }}
+{% if order.shipping_amount %}- Доставка: {{ order.shipping_amount }} {{ order.currency }}{% endif %}
+{% if order.discount_amount %}- Скидка: -{{ order.discount_amount }} {{ order.currency }}{% endif %}
+- Общая сумма: {{ order.total_amount }} {{ order.currency }}
+
+Спасибо за ваш заказ! Мы свяжемся с вами в ближайшее время.
+
+---
+Это автоматическое сообщение, пожалуйста, не отвечайте на него.
+© {{ site_name }}. Все права защищены.
+

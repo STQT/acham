@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подтверждение заказа</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #ffffff;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        .order-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .order-items {
+            margin: 20px 0;
+        }
+        .order-item {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        .total {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #333;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ site_name }}</h1>
+        <h2>Подтверждение заказа</h2>
+    </div>
+    
+    <div class="content">
+        <p>Здравствуйте!</p>
+        
+        <p>Ваш заказ <strong>{{ order.number }}</strong> успешно подтвержден и принят в обработку.</p>
+        
+        <div class="order-info">
+            <h3>Информация о заказе:</h3>
+            <p><strong>Номер заказа:</strong> {{ order.number }}</p>
+            <p><strong>Дата заказа:</strong> {{ order.placed_at|date:"d.m.Y H:i" }}</p>
+            <p><strong>Статус:</strong> {{ order.get_status_display }}</p>
+        </div>
+        
+        <div class="order-items">
+            <h3>Товары в заказе:</h3>
+            {% for item in order_items %}
+            <div class="order-item">
+                <p><strong>{{ item.product_name }}</strong></p>
+                <p>Количество: {{ item.quantity }} × {{ item.unit_price }} {{ order.currency }}</p>
+                <p>Итого: {{ item.total_price }} {{ order.currency }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="total">
+            <p>Подытог: {{ order.subtotal_amount }} {{ order.currency }}</p>
+            {% if order.shipping_amount %}
+            <p>Доставка: {{ order.shipping_amount }} {{ order.currency }}</p>
+            {% endif %}
+            {% if order.discount_amount %}
+            <p>Скидка: -{{ order.discount_amount }} {{ order.currency }}</p>
+            {% endif %}
+            <p>Общая сумма: {{ order.total_amount }} {{ order.currency }}</p>
+        </div>
+        
+        <p>Спасибо за ваш заказ! Мы свяжемся с вами в ближайшее время.</p>
+    </div>
+    
+    <div class="footer">
+        <p>Это автоматическое сообщение, пожалуйста, не отвечайте на него.</p>
+        <p>&copy; {{ site_name }}. Все права защищены.</p>
+    </div>
+</body>
+</html>
+

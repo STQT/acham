@@ -697,6 +697,10 @@ def payment_notify(request):
                     metadata={"payment_transaction_id": payment_transaction.id},
                 )
 
+                # Send order confirmation notification (email or SMS)
+                from acham.orders.tasks import send_order_notification
+                send_order_notification.delay(order.id)
+
         elif payment_status == "failed" or payload.get("error"):
             payment_transaction.status = PaymentTransaction.Status.FAILED
             payment_transaction.error_code = payload.get("error")
