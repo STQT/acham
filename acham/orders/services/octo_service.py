@@ -70,7 +70,7 @@ class OctoService:
             return {"error": -1, "errMessage": str(e)}
 
     @classmethod
-    def (
+    def prepare_payment(
         cls,
         shop_transaction_id: str,
         total_sum: Decimal,
@@ -81,7 +81,7 @@ class OctoService:
         language: str = "uz",
         description: str = "",
         auto_capture: bool = True,
-        ttl: int = 15, # minutes
+        ttl: int = 15,  # minutes
         init_time: str = None,
     ) -> Dict[str, Any]:
         shop_id = cls._get_shop_id()
