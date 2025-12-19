@@ -423,7 +423,7 @@ class PaymentConfirmView(APIView):
                     if language not in ["uz", "ru", "en"]:
                         language = "uz"
                     # Construct OTP form URL with transaction_id and language
-                    otp_url = f"https://pay2.octo.uz/otp-form/{transaction_id}?language={language}"
+                    otp_url = f"https://pay2.octo.uz/pay/{transaction_id}?language={language}"
                 payment_transaction.octo_payment_id = pay_data.get("id", transaction_id)
                 payment_transaction.verification_url = otp_url
                 payment_transaction.status = PaymentTransaction.Status.VERIFICATION_REQUIRED
