@@ -62,6 +62,18 @@ class OrderDetailView(OrderQuerySetMixin, generics.RetrieveUpdateAPIView):
             return OrderUpdateSerializer
         return super().get_serializer_class()
 
+    def update(self, request, *args, **kwargs):
+        """Override update to return full order details with public_id."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        updated_order = serializer.save()
+
+        # Return full order details using OrderDetailSerializer
+        detail_serializer = OrderDetailSerializer(updated_order, context=self.get_serializer_context())
+        return Response(detail_serializer.data)
+
 
 class OrderStatusListView(APIView):
     permission_classes = (IsAuthenticated,)

@@ -79,6 +79,7 @@ class OctoService:
         return_url: str,
         notify_url: str,
         language: str = "uz",
+        currency: str = "USD",
         description: str = "",
         auto_capture: bool = True,
         ttl: int = 15,  # minutes
@@ -92,6 +93,9 @@ class OctoService:
             logger.info("OCTO credentials not configured, using test mode simulation")
             return cls._simulate_prepare_payment(shop_transaction_id, total_sum, return_url)
 
+        # Validate currency (only UZS and USD are supported)
+        valid_currency = currency if currency in ["UZS", "USD"] else "USD"
+        
         url = f"{cls._get_api_url()}/prepare_payment"
         payload = {
             "octo_shop_id": shop_id,
@@ -101,7 +105,7 @@ class OctoService:
             "test": cls._get_test_mode(),
             "user_data": user_data,
             "total_sum": float(total_sum),
-            "currency": "UZS",  # Assuming fixed currency for now
+            "currency": valid_currency,
             "description": description,
             "basket": basket,
             "payment_methods": [

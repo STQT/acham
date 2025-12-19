@@ -109,6 +109,12 @@ class PaymentInitiateView(APIView):
         if language not in ["uz", "ru", "en"]:
             language = "uz"
 
+        # Get currency from request (UZS for Uzbekistan, USD for others)
+        currency = request.GET.get("currency", order.currency)
+        if currency not in ["UZS", "USD"]:
+            # Default to order currency or USD
+            currency = order.currency if order.currency in ["UZS", "USD"] else "USD"
+
         # Get current time in OCTO format for init_time using TIME_ZONE from settings
         # timezone.localtime() automatically uses settings.TIME_ZONE
         local_time = timezone.localtime(timezone.now())
@@ -124,6 +130,7 @@ class PaymentInitiateView(APIView):
                 return_url=return_url,
                 notify_url=notify_url,
                 language=language,
+                currency=currency,
                 description=f"Order {order.number}",
                 init_time=init_time,
             )
@@ -198,7 +205,7 @@ class PaymentInitiateView(APIView):
                     octo_transaction_id=octo_transaction_id,
                     status=PaymentTransaction.Status.PREPARED,
                     amount=order.total_amount,
-                    currency=order.currency,
+                    currency=currency,  # Use currency from request
                     request_payload={"user_data": user_data, "basket": basket},
                     response_payload=octo_response,
                     verification_url=octo_pay_url,
@@ -255,7 +262,7 @@ class PaymentInitiateView(APIView):
                             octo_transaction_id=octo_transaction_id,
                             status=PaymentTransaction.Status.PREPARED,
                             amount=order.total_amount,
-                            currency=order.currency,
+                            currency=currency,  # Use currency from request
                             request_payload={"user_data": user_data, "basket": basket},
                             response_payload=octo_response,
                             verification_url=existing_pay_url or "",
@@ -276,7 +283,7 @@ class PaymentInitiateView(APIView):
                     shop_transaction_id=shop_transaction_id,
                     status=PaymentTransaction.Status.FAILED,
                     amount=order.total_amount,
-                    currency=order.currency,
+                    currency=currency,  # Use currency from request
                     request_payload={"user_data": user_data, "basket": basket},
                     response_payload=octo_response,
                     error_code=error_code,
@@ -303,7 +310,7 @@ class PaymentInitiateView(APIView):
                 octo_payment_id=octo_payment_id,
                 status=PaymentTransaction.Status.PREPARED,
                 amount=order.total_amount,
-                currency=order.currency,
+                currency=currency,  # Use currency from request
                 request_payload={"user_data": user_data, "basket": basket},
                 response_payload=octo_response,
             )
