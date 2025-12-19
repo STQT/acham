@@ -672,31 +672,81 @@ class PaymentVerifyOTPView(APIView):
 @permission_classes([AllowAny])
 def payment_notify(request):
     """Webhook endpoint for OCTO payment notifications."""
+    import json
+    
+    # Логируем информацию о запросе
+    logger.info("=" * 80)
+    logger.info("OCTO WEBHOOK NOTIFICATION RECEIVED")
+    logger.info("=" * 80)
+    logger.info(f"Request method: {request.method}")
+    logger.info(f"Request path: {request.path}")
+    logger.info(f"Request headers: {dict(request.headers)}")
+    logger.info(f"Remote address: {request.META.get('REMOTE_ADDR', 'unknown')}")
+    logger.info(f"User agent: {request.META.get('HTTP_USER_AGENT', 'unknown')}")
+    
+    # Логируем полный payload
     payload = request.data
-    logger.info(f"OCTO webhook received: {payload}")
-
+    try:
+        payload_json = json.dumps(payload, indent=2, ensure_ascii=False, default=str)
+        logger.info(f"OCTO webhook payload (JSON):\n{payload_json}")
+    except Exception as e:
+        logger.warning(f"Could not serialize payload to JSON: {e}")
+        logger.info(f"OCTO webhook payload (raw): {payload}")
+    
+    # Логируем все ключи payload для отладки
+    if isinstance(payload, dict):
+        logger.info(f"Payload keys: {list(payload.keys())}")
+        for key, value in payload.items():
+            logger.info(f"  - {key}: {value} (type: {type(value).__name__})")
+    
     transaction_id = payload.get("transaction_id") or payload.get("id")
     if not transaction_id:
-        logger.error("OCTO webhook: missing transaction_id")
+        logger.error("=" * 80)
+        logger.error("OCTO webhook ERROR: missing transaction_id")
+        logger.error(f"Available payload keys: {list(payload.keys()) if isinstance(payload, dict) else 'not a dict'}")
+        logger.error("=" * 80)
         return Response({"error": "transaction_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+    logger.info(f"Looking for payment transaction with octo_transaction_id: {transaction_id}")
+    
     try:
         payment_transaction = PaymentTransaction.objects.get(octo_transaction_id=transaction_id)
+        logger.info(f"Found payment transaction: ID={payment_transaction.id}, Order={payment_transaction.order.public_id}, Current status={payment_transaction.status}")
     except PaymentTransaction.DoesNotExist:
-        logger.error(f"OCTO webhook: payment transaction not found: {transaction_id}")
+        logger.error("=" * 80)
+        logger.error(f"OCTO webhook ERROR: payment transaction not found")
+        logger.error(f"Transaction ID from payload: {transaction_id}")
+        logger.error(f"Payload: {payload}")
+        logger.error("=" * 80)
         return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
 
     # Update payment transaction
+    old_status = payment_transaction.status
     payment_transaction.response_payload = payload
     payment_status = payload.get("status", "").lower()
+    error_code = payload.get("error")
+    error_message = payload.get("errMessage") or payload.get("errorMessage")
+    
+    logger.info(f"Processing payment status update:")
+    logger.info(f"  - Old status: {old_status}")
+    logger.info(f"  - Payment status from payload: {payment_status}")
+    logger.info(f"  - Error code: {error_code}")
+    logger.info(f"  - Error message: {error_message}")
+    logger.info(f"  - Order ID: {payment_transaction.order.public_id}")
+    logger.info(f"  - Order number: {payment_transaction.order.number}")
+    logger.info(f"  - Amount: {payment_transaction.amount} {payment_transaction.currency}")
 
     with transaction.atomic():
-        if payment_status == "success" or payload.get("error") == 0:
+        if payment_status == "success" or error_code == 0:
+            logger.info("Processing SUCCESS status")
             payment_transaction.status = PaymentTransaction.Status.SUCCESS
             payment_transaction.completed_at = timezone.now()
 
             # Update order status
             order = payment_transaction.order
+            old_order_status = order.status
+            logger.info(f"Order status update: {old_order_status} -> PAYMENT_CONFIRMED")
+            
             if order.status == OrderStatus.PENDING_PAYMENT:
                 order.status = OrderStatus.PAYMENT_CONFIRMED
                 order.paid_at = timezone.now()
@@ -710,18 +760,35 @@ def payment_notify(request):
                     metadata={"payment_transaction_id": payment_transaction.id},
                 )
 
-                # Send order confirmation notification (email or SMS)
-                from acham.orders.tasks import send_order_notification
-                send_order_notification.delay(order.id)
+                logger.info(f"Order {order.public_id} status updated to PAYMENT_CONFIRMED")
+                logger.info(f"Order paid_at set to: {order.paid_at}")
 
-        elif payment_status == "failed" or payload.get("error"):
+                # Send order confirmation notification (email or SMS)
+                try:
+                    from acham.orders.tasks import send_order_notification
+                    send_order_notification.delay(order.id)
+                    logger.info(f"Order confirmation notification task queued for order {order.id}")
+                except Exception as e:
+                    logger.error(f"Failed to queue order notification: {e}", exc_info=True)
+            else:
+                logger.warning(f"Order {order.public_id} status is {old_order_status}, not updating to PAYMENT_CONFIRMED")
+
+        elif payment_status == "failed" or error_code:
+            logger.info("Processing FAILED status")
             payment_transaction.status = PaymentTransaction.Status.FAILED
-            payment_transaction.error_code = payload.get("error")
-            payment_transaction.error_message = payload.get("errMessage", _("Payment failed"))
+            payment_transaction.error_code = error_code
+            payment_transaction.error_message = error_message or _("Payment failed")
             payment_transaction.completed_at = timezone.now()
+
+            logger.info(f"Payment transaction marked as FAILED:")
+            logger.info(f"  - Error code: {error_code}")
+            logger.info(f"  - Error message: {payment_transaction.error_message}")
 
             # Update order status
             order = payment_transaction.order
+            old_order_status = order.status
+            logger.info(f"Order status update: {old_order_status} -> PAYMENT_FAILED")
+            
             if order.status == OrderStatus.PENDING_PAYMENT:
                 order.status = OrderStatus.PAYMENT_FAILED
                 order.save(update_fields=["status", "updated_at"])
@@ -734,8 +801,20 @@ def payment_notify(request):
                     metadata={"payment_transaction_id": payment_transaction.id},
                 )
 
-        payment_transaction.save()
+                logger.info(f"Order {order.public_id} status updated to PAYMENT_FAILED")
+            else:
+                logger.warning(f"Order {order.public_id} status is {old_order_status}, not updating to PAYMENT_FAILED")
+        else:
+            logger.warning(f"Unknown payment status: {payment_status}, error_code: {error_code}")
+            logger.warning(f"Payload: {payload}")
 
+        payment_transaction.save()
+        logger.info(f"Payment transaction saved with new status: {payment_transaction.status}")
+
+    logger.info("=" * 80)
+    logger.info("OCTO WEBHOOK PROCESSING COMPLETED")
+    logger.info("=" * 80)
+    
     return Response({"status": "ok"}, status=status.HTTP_200_OK)
 
 
