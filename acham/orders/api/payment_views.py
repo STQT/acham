@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 from django.conf import settings
 from django.db import transaction
@@ -138,8 +139,10 @@ class PaymentInitiateView(APIView):
             if octo_pay_url:
                 logger.info(f"OCTO prepare_payment success: payment URL received - {octo_pay_url}")
                 # Извлекаем transaction_id из URL
-                # URL формат: https://pay2.octo.uz/pay/{transaction_id}
-                transaction_id_from_url = octo_pay_url.split('/')[-1] if octo_pay_url else None
+                # URL формат: https://pay2.octo.uz/pay/{transaction_id} или https://pay2.octo.uz/pay/{transaction_id}?language=uz
+                # Убираем query параметры перед извлечением transaction_id
+                url_without_params = octo_pay_url.split('?')[0]
+                transaction_id_from_url = url_without_params.split('/')[-1] if url_without_params else None
 
                 if not transaction_id_from_url:
                     logger.error("OCTO prepare_payment error: Could not extract transaction_id from URL")
@@ -148,6 +151,23 @@ class PaymentInitiateView(APIView):
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     )
                 octo_transaction_id = transaction_id_from_url or octo_data.get("id") or octo_data.get("octo_payment_UUID")
+                
+                # Проверяем, что URL правильный формат (/pay/, а не /otp-form/)
+                # Если OCTO вернул /otp-form/, заменяем на /pay/
+                if '/otp-form/' in octo_pay_url:
+                    logger.warning(f"OCTO returned otp-form URL, converting to pay URL: {octo_pay_url}")
+                    # Заменяем /otp-form/ на /pay/
+                    octo_pay_url = octo_pay_url.replace('/otp-form/', '/pay/')
+                
+                # Убираем дублирующиеся query параметры language
+                parsed = urlparse(octo_pay_url)
+                query_params = parse_qs(parsed.query)
+                # Оставляем только один language параметр (берем первый)
+                if 'language' in query_params:
+                    query_params['language'] = [query_params['language'][0]]
+                # Пересобираем URL без дублирующихся параметров
+                new_query = urlencode(query_params, doseq=True)
+                octo_pay_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
                 
                 # Проверяем, есть ли уже такая транзакция
                 existing_payment = PaymentTransaction.objects.filter(
