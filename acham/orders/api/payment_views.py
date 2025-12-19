@@ -115,22 +115,36 @@ class PaymentInitiateView(APIView):
             # Default to order currency or USD
             currency = order.currency if order.currency in ["UZS", "USD"] else "USD"
 
+        # OCTO API only accepts UZS currency, so we need to convert USD to UZS if needed
+        # Exchange rate: 1 USD = 12500 UZS (should match frontend rate)
+        USD_TO_UZS_RATE = Decimal("12500")
+        octo_currency = "UZS"  # Always use UZS for OCTO
+        octo_total_sum = order.total_amount
+        
+        # Convert basket prices if currency is USD
+        if currency == "USD":
+            octo_total_sum = order.total_amount * USD_TO_UZS_RATE
+            # Convert basket item prices from USD to UZS
+            for basket_item in basket:
+                if isinstance(basket_item.get("price"), (int, float)):
+                    basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
+
         # Get current time in OCTO format for init_time using TIME_ZONE from settings
         # timezone.localtime() automatically uses settings.TIME_ZONE
         local_time = timezone.localtime(timezone.now())
         init_time = local_time.strftime("%Y-%m-%d %H:%M:%S")
 
         try:
-            # Call OCTO prepare_payment
+            # Call OCTO prepare_payment (always with UZS currency)
             octo_response = OctoService.prepare_payment(
                 shop_transaction_id=shop_transaction_id,
-                total_sum=order.total_amount,
+                total_sum=octo_total_sum,
                 user_data=user_data,
                 basket=basket,
                 return_url=return_url,
                 notify_url=notify_url,
                 language=language,
-                currency=currency,
+                currency=octo_currency,  # Always UZS for OCTO
                 description=f"Order {order.number}",
                 init_time=init_time,
             )
@@ -139,8 +153,8 @@ class PaymentInitiateView(APIView):
 
             # Check if response contains payment URL (success case)
             # OCTO может возвращать error: 1, но при этом в data есть octo_pay_url - это успешный ответ
-            octo_data = octo_response.get("data", {})
-            octo_pay_url = octo_response.get("octo_pay_url") or octo_data.get("octo_pay_url")
+            octo_data = octo_response.get("data") or {}
+            octo_pay_url = octo_response.get("octo_pay_url") or (octo_data.get("octo_pay_url") if octo_data else None)
 
             # Если есть octo_pay_url, это успешный ответ (даже если error: 1)
             if octo_pay_url:
@@ -232,6 +246,7 @@ class PaymentInitiateView(APIView):
                 logger.error(f"OCTO prepare_payment error: {error_code} - {error_message}")
 
                 # Check if payment already exists (OCTO returns this when payment was created by previous request)
+                octo_data = octo_response.get("data") or {}
                 if "This payment was created by previous request" in error_message and octo_data:
                     # Payment already exists, try to find it or create it with OCTO data
                     octo_transaction_id = octo_data.get("id") or octo_data.get("octo_payment_UUID")
@@ -299,9 +314,9 @@ class PaymentInitiateView(APIView):
                 )
 
             # Success - create payment transaction
-            octo_data = octo_response.get("data", {})
-            octo_transaction_id = octo_data.get("id") or octo_data.get("octo_payment_UUID")
-            octo_payment_id = octo_data.get("octo_payment_UUID") or octo_data.get("payment_id")
+            octo_data = octo_response.get("data") or {}
+            octo_transaction_id = octo_data.get("id") or octo_data.get("octo_payment_UUID") if octo_data else None
+            octo_payment_id = (octo_data.get("octo_payment_UUID") or octo_data.get("payment_id")) if octo_data else None
 
             payment_transaction = PaymentTransaction.objects.create(
                 order=order,

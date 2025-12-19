@@ -93,8 +93,10 @@ class OctoService:
             logger.info("OCTO credentials not configured, using test mode simulation")
             return cls._simulate_prepare_payment(shop_transaction_id, total_sum, return_url)
 
-        # Validate currency (only UZS and USD are supported)
-        valid_currency = currency if currency in ["UZS", "USD"] else "USD"
+        # OCTO API only accepts UZS currency
+        # Currency conversion should be done before calling this method
+        # Always use UZS for OCTO API
+        valid_currency = "UZS"
         
         url = f"{cls._get_api_url()}/prepare_payment"
         payload = {
