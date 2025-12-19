@@ -99,7 +99,8 @@ class PaymentInitiateView(APIView):
 
         # Build return and notify URLs
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:4200")
-        return_url = f"{frontend_url}/profile?order={order.public_id}"
+        # return_url - куда OCTO редиректит после успешной оплаты
+        return_url = f"{frontend_url}/checkout/payment-callback?order_id={order.public_id}"
         notify_url = f"{request.build_absolute_uri('/')}api/payments/notify/"
 
         # Get language from request
@@ -165,8 +166,7 @@ class PaymentInitiateView(APIView):
                             "transaction_id": existing_payment.octo_transaction_id,
                             "payment_id": existing_payment.octo_payment_id,
                             "status": existing_payment.status,
-                            "verification_url": existing_payment.verification_url,
-                            "seconds_left": existing_payment.seconds_left,
+                            "payment_url": octo_pay_url,  # URL для редиректа на страницу оплаты OCTO
                         },
                         status=status.HTTP_200_OK,
                     )
@@ -184,27 +184,14 @@ class PaymentInitiateView(APIView):
                     verification_url=octo_pay_url,
                 )
                 
-                # Вызываем verification_info для получения дополнительной информации
-                if octo_transaction_id:
-                    try:
-                        verification_response = OctoService.verification_info(octo_transaction_id)
-                        if not verification_response.get("error"):
-                            verification_data = verification_response.get("data", {})
-                            payment_transaction.octo_payment_id = verification_data.get("id") or verification_data.get("octo_payment_UUID")
-                            payment_transaction.seconds_left = verification_data.get("secondsLeft") or verification_data.get("seconds_left")
-                            payment_transaction.save()
-                    except Exception as e:
-                        logger.warning(f"Could not get verification info: {e}")
-                
+                # Для одностадийной оплаты через платежную страницу OCTO
+                # Возвращаем octo_pay_url для редиректа на страницу оплаты OCTO
                 response_data = {
                     "transaction_id": octo_transaction_id,
                     "payment_id": payment_transaction.octo_payment_id,
                     "status": payment_transaction.status,
-                    "verification_url": octo_pay_url,
+                    "payment_url": octo_pay_url,  # URL для редиректа на страницу оплаты OCTO
                 }
-                
-                if payment_transaction.seconds_left:
-                    response_data["seconds_left"] = payment_transaction.seconds_left
                 
                 return Response(
                     response_data,
@@ -221,6 +208,8 @@ class PaymentInitiateView(APIView):
                 if "This payment was created by previous request" in error_message and octo_data:
                     # Payment already exists, try to find it or create it with OCTO data
                     octo_transaction_id = octo_data.get("id") or octo_data.get("octo_payment_UUID")
+                    # Получаем payment_url из ответа
+                    existing_pay_url = octo_data.get("octo_pay_url") or octo_response.get("octo_pay_url")
 
                     # Check if we already have this transaction
                     existing_payment = PaymentTransaction.objects.filter(
@@ -228,14 +217,13 @@ class PaymentInitiateView(APIView):
                     ).first()
 
                     if existing_payment:
-                        # Return existing payment
+                        # Return existing payment with payment_url
                         return Response(
                             {
                                 "transaction_id": existing_payment.octo_transaction_id,
                                 "payment_id": existing_payment.octo_payment_id,
                                 "status": existing_payment.status,
-                                "verification_url": existing_payment.verification_url,
-                                "seconds_left": existing_payment.seconds_left,
+                                "payment_url": existing_payment.verification_url or existing_pay_url,
                             },
                             status=status.HTTP_200_OK,
                         )
@@ -250,12 +238,14 @@ class PaymentInitiateView(APIView):
                             currency=order.currency,
                             request_payload={"user_data": user_data, "basket": basket},
                             response_payload=octo_response,
+                            verification_url=existing_pay_url or "",
                         )
 
                         return Response(
                             {
                                 "transaction_id": octo_transaction_id,
                                 "status": payment_transaction.status,
+                                "payment_url": existing_pay_url,
                             },
                             status=status.HTTP_201_CREATED,
                         )
@@ -298,35 +288,14 @@ class PaymentInitiateView(APIView):
                 response_payload=octo_response,
             )
 
-            # После prepare_payment вызываем verification_info для получения URL формы оплаты
-            # Это нужно для одностадийной оплаты через партнерский веб (на нашем сайте)
-            verification_response = OctoService.verification_info(octo_transaction_id)
-            
-            verification_url = None
-            seconds_left = None
-            
-            if not verification_response.get("error"):
-                verification_data = verification_response.get("data", {})
-                verification_url = verification_data.get("verification_url") or verification_data.get("verificationUrl")
-                seconds_left = verification_data.get("secondsLeft") or verification_data.get("seconds_left")
-                
-                # Обновляем payment_transaction с данными из verification_info
-                payment_transaction.verification_url = verification_url or ""
-                payment_transaction.seconds_left = seconds_left
-                payment_transaction.save()
-
+            # Для одностадийной оплаты через платежную страницу OCTO
+            # Возвращаем octo_pay_url для редиректа на страницу оплаты OCTO
             response_data = {
                 "transaction_id": octo_transaction_id,
                 "payment_id": octo_payment_id,
                 "status": payment_transaction.status,
+                "payment_url": octo_pay_url,  # URL для редиректа на страницу оплаты OCTO
             }
-
-            # Добавляем verification_url и seconds_left если они есть
-            # verification_url может быть использован для iframe или формы оплаты на нашем сайте
-            if verification_url:
-                response_data["verification_url"] = verification_url
-            if seconds_left is not None:
-                response_data["seconds_left"] = seconds_left
 
             return Response(
                 response_data,
