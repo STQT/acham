@@ -21,6 +21,7 @@ from acham.orders.models import (
     OrderStatus,
     OrderStatusHistory,
     PaymentTransaction,
+    CurrencyRate,
 )
 from acham.orders.services.octo_service import OctoService
 
@@ -142,8 +143,8 @@ class PaymentInitiateView(APIView):
         # - OCTO accepts UZS and CLS (convertible sums)
         # - For non-Uzbekistan + Visa/MC: use CLS (convertible sums) to avoid conversion
         # - For Uzbekistan or if currency is already UZS: use UZS
-        # Exchange rate: 1 USD = 12500 UZS (should match frontend rate)
-        USD_TO_UZS_RATE = Decimal("12500")
+        # Get USD to UZS exchange rate from database
+        USD_TO_UZS_RATE = CurrencyRate.get_usd_rate()
         
         if currency == "USD" and not is_uzbekistan:
             # For non-Uzbekistan countries with USD, use CLS (convertible sums)
@@ -818,6 +819,26 @@ def payment_notify(request):
     logger.info(f"  - Order number: {payment_transaction.order.number}")
     logger.info(f"  - Amount: {payment_transaction.amount} {payment_transaction.currency}")
 
+    # Get payment amount from webhook payload
+    # OCTO sends total_sum in the payment currency (UZS or CLS)
+    payment_amount_from_webhook = payload.get("total_sum")
+    payment_currency_from_webhook = payload.get("currency", "UZS")
+    
+    # If payment was in UZS but order currency is USD, convert back to USD for storage
+    order = payment_transaction.order
+    if payment_currency_from_webhook == "UZS" and order.currency == "USD" and payment_amount_from_webhook:
+        # Convert UZS amount back to USD
+        usd_rate = CurrencyRate.get_usd_rate()
+        converted_amount = Decimal(str(payment_amount_from_webhook)) / usd_rate
+        payment_transaction.amount = converted_amount
+        payment_transaction.currency = "USD"  # Store in order's original currency
+        logger.info(f"Converted payment amount from UZS to USD: {payment_amount_from_webhook} UZS -> {converted_amount} USD (rate: {usd_rate})")
+    elif payment_amount_from_webhook:
+        # For CLS or if currencies match, use the amount as-is
+        payment_transaction.amount = Decimal(str(payment_amount_from_webhook))
+        payment_transaction.currency = order.currency
+        logger.info(f"Payment amount: {payment_transaction.amount} {payment_transaction.currency} (no conversion needed)")
+
     with transaction.atomic():
         # OCTO отправляет статус "succeeded" при успешной оплате
         # Проверяем успешность: статус "succeeded" или "success", или error_code == 0
@@ -840,8 +861,7 @@ def payment_notify(request):
             if not payment_transaction.octo_payment_id and transaction_id:
                 payment_transaction.octo_payment_id = transaction_id
 
-            # Update order status
-            order = payment_transaction.order
+            # Update order status (order variable already set above during amount conversion)
             old_order_status = order.status
             logger.info(f"Order status update: {old_order_status} -> PAYMENT_CONFIRMED")
             

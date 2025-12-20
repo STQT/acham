@@ -220,6 +220,59 @@ class OrderStatusHistory(models.Model):
         return f"{self.order.number}: {self.from_status} → {self.to_status}"
 
 
+class CurrencyRate(models.Model):
+    """Model to store currency exchange rates from Central Bank of Uzbekistan."""
+    
+    code = models.CharField(
+        max_length=3,
+        unique=True,
+        verbose_name=_("Currency Code"),
+        help_text=_("ISO 4217 currency code (e.g., USD, EUR, RUB)")
+    )
+    rate = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        verbose_name=_("Rate"),
+        help_text=_("Exchange rate: 1 foreign currency = X UZS")
+    )
+    date = models.DateField(
+        verbose_name=_("Date"),
+        help_text=_("Date when this rate was effective")
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-date', 'code']
+        verbose_name = _("Currency Rate")
+        verbose_name_plural = _("Currency Rates")
+        indexes = [
+            models.Index(fields=['code', '-date']),
+            models.Index(fields=['-date']),
+        ]
+    
+    def __str__(self) -> str:
+        return f"{self.code} = {self.rate} UZS ({self.date})"
+    
+    @classmethod
+    def get_latest_rate(cls, code: str) -> Decimal | None:
+        """Get the latest exchange rate for a currency code."""
+        try:
+            rate_obj = cls.objects.get(code=code.upper())
+            return Decimal(str(rate_obj.rate))
+        except cls.DoesNotExist:
+            return None
+    
+    @classmethod
+    def get_usd_rate(cls) -> Decimal:
+        """Get the latest USD to UZS rate."""
+        rate = cls.get_latest_rate('USD')
+        if rate is None:
+            # Fallback to default rate if not available
+            return Decimal('12500')
+        return rate
+
+
 class PaymentTransaction(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "В ожидании"
