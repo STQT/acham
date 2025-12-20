@@ -140,42 +140,33 @@ class PaymentInitiateView(APIView):
             ]
 
         # Determine currency for OCTO:
-        # - OCTO accepts ONLY UZS and CLS (convertible sums)
-        # - For non-Uzbekistan + USD: use CLS (convertible sums) to avoid conversion
-        # - For Uzbekistan + USD: convert to UZS
-        # - For UZS or CLS: use as-is
+        # - OCTO accepts ONLY UZS (CLS may not be available for all shops/test mode)
+        # - Always convert USD to UZS using exchange rate from database
+        # - For UZS: use as-is
         # Get USD to UZS exchange rate from database
         USD_TO_UZS_RATE = CurrencyRate.get_usd_rate()
         
         # Ensure is_uzbekistan is a boolean (not None)
         is_uzbekistan = bool(is_uzbekistan)
         
-        if currency == "USD":
-            if is_uzbekistan:
-                # For Uzbekistan, convert USD to UZS
-                octo_currency = "UZS"
-                octo_total_sum = order.total_amount * USD_TO_UZS_RATE
-                logger.info(f"Converting USD to UZS for Uzbekistan: {order.total_amount} USD -> {octo_total_sum} UZS")
-                # Convert basket item prices from USD to UZS
-                for basket_item in basket:
-                    if isinstance(basket_item.get("price"), (int, float)):
-                        basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
-            else:
-                # For non-Uzbekistan countries with USD, use CLS (convertible sums)
-                # This allows payment in original currency without conversion
-                octo_currency = "CLS"
-                octo_total_sum = order.total_amount
-                logger.info(f"Using CLS currency for non-Uzbekistan country with USD amount: {octo_total_sum}")
-                # Keep basket prices in USD for CLS
-        elif currency in ["UZS", "CLS"]:
-            # Currency is already UZS or CLS, use as-is
-            octo_currency = currency
+        # Always use UZS for OCTO API (CLS support may vary by shop/test mode)
+        octo_currency = "UZS"
+        
+        if currency == "USD" or order.currency == "USD":
+            # Convert USD to UZS
+            octo_total_sum = order.total_amount * USD_TO_UZS_RATE
+            logger.info(f"Converting USD to UZS: {order.total_amount} USD -> {octo_total_sum} UZS (rate: {USD_TO_UZS_RATE})")
+            # Convert basket item prices from USD to UZS
+            for basket_item in basket:
+                if isinstance(basket_item.get("price"), (int, float)):
+                    basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
+        elif currency == "UZS":
+            # Currency is already UZS, use as-is
             octo_total_sum = order.total_amount
-            logger.info(f"Using currency {octo_currency} with amount: {octo_total_sum}")
+            logger.info(f"Using currency UZS with amount: {octo_total_sum}")
         else:
-            # Unknown currency, default to UZS and convert if needed
-            logger.warning(f"Unknown currency '{currency}', defaulting to UZS. Order currency: {order.currency}")
-            octo_currency = "UZS"
+            # Unknown currency, try to convert from order currency
+            logger.warning(f"Unknown currency '{currency}', order currency: {order.currency}, defaulting to UZS")
             # If order currency is USD, convert to UZS
             if order.currency == "USD":
                 octo_total_sum = order.total_amount * USD_TO_UZS_RATE
@@ -186,11 +177,11 @@ class PaymentInitiateView(APIView):
                         basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
             else:
                 octo_total_sum = order.total_amount
-                logger.info(f"Using amount as-is: {octo_total_sum} {octo_currency}")
+                logger.info(f"Using amount as-is: {octo_total_sum} UZS")
         
-        # Final validation: ensure octo_currency is valid for OCTO API
-        if octo_currency not in ["UZS", "CLS"]:
-            logger.error(f"Invalid octo_currency '{octo_currency}', forcing to UZS")
+        # Final validation: ensure octo_currency is UZS (only supported currency)
+        if octo_currency != "UZS":
+            logger.warning(f"Currency '{octo_currency}' not supported by OCTO, forcing to UZS")
             octo_currency = "UZS"
         
         logger.info(f"Payment methods: {payment_methods}, OCTO currency: {octo_currency}")
