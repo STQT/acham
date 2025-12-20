@@ -699,23 +699,42 @@ def payment_notify(request):
         for key, value in payload.items():
             logger.info(f"  - {key}: {value} (type: {type(value).__name__})")
     
-    transaction_id = payload.get("transaction_id") or payload.get("id")
-    if not transaction_id:
+    # OCTO отправляет octo_payment_UUID или octo_payment_id как идентификатор транзакции
+    # Также можно использовать shop_transaction_id для поиска
+    transaction_id = (
+        payload.get("octo_payment_UUID") or 
+        payload.get("octo_payment_id") or 
+        payload.get("transaction_id") or 
+        payload.get("id")
+    )
+    
+    shop_transaction_id = payload.get("shop_transaction_id")
+    
+    if not transaction_id and not shop_transaction_id:
         logger.error("=" * 80)
-        logger.error("OCTO webhook ERROR: missing transaction_id")
+        logger.error("OCTO webhook ERROR: missing transaction identifier")
         logger.error(f"Available payload keys: {list(payload.keys()) if isinstance(payload, dict) else 'not a dict'}")
         logger.error("=" * 80)
-        return Response({"error": "transaction_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "transaction identifier is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    logger.info(f"Looking for payment transaction with octo_transaction_id: {transaction_id}")
+    logger.info(f"Looking for payment transaction with octo_transaction_id: {transaction_id} or shop_transaction_id: {shop_transaction_id}")
     
     try:
-        payment_transaction = PaymentTransaction.objects.get(octo_transaction_id=transaction_id)
+        # Сначала пробуем найти по octo_transaction_id (octo_payment_UUID)
+        if transaction_id:
+            payment_transaction = PaymentTransaction.objects.get(octo_transaction_id=transaction_id)
+        # Если не нашли, пробуем по shop_transaction_id
+        elif shop_transaction_id:
+            payment_transaction = PaymentTransaction.objects.get(shop_transaction_id=shop_transaction_id)
+        else:
+            raise PaymentTransaction.DoesNotExist("No transaction identifier provided")
+            
         logger.info(f"Found payment transaction: ID={payment_transaction.id}, Order={payment_transaction.order.public_id}, Current status={payment_transaction.status}")
     except PaymentTransaction.DoesNotExist:
         logger.error("=" * 80)
         logger.error(f"OCTO webhook ERROR: payment transaction not found")
         logger.error(f"Transaction ID from payload: {transaction_id}")
+        logger.error(f"Shop transaction ID from payload: {shop_transaction_id}")
         logger.error(f"Payload: {payload}")
         logger.error("=" * 80)
         return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -737,7 +756,8 @@ def payment_notify(request):
     logger.info(f"  - Amount: {payment_transaction.amount} {payment_transaction.currency}")
 
     with transaction.atomic():
-        if payment_status == "success" or error_code == 0:
+        # OCTO отправляет статус "succeeded" при успешной оплате
+        if payment_status in ["success", "succeeded"] or (error_code is not None and error_code == 0):
             logger.info("Processing SUCCESS status")
             payment_transaction.status = PaymentTransaction.Status.SUCCESS
             payment_transaction.completed_at = timezone.now()
