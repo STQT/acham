@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Banner, FAQ
+from ..models import Banner, FAQ, StaticPage
 
 class BannerSerializer(serializers.ModelSerializer):
     """Serializer for Banner model."""
@@ -35,6 +35,22 @@ class FAQSerializer(serializers.ModelSerializer):
             'id',
             'question',
             'answer',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class StaticPageSerializer(serializers.ModelSerializer):
+    """Serializer for StaticPage model."""
+    
+    class Meta:
+        model = StaticPage
+        fields = [
+            'id',
+            'page_type',
+            'title',
+            'content',
             'created_at',
             'updated_at'
         ]

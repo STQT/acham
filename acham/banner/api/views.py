@@ -1,8 +1,10 @@
 from rest_framework import generics
 from drf_spectacular.utils import extend_schema
+from rest_framework.response import Response
+from rest_framework import status
 
-from ..models import Banner, FAQ
-from .serializers import BannerSerializer, FAQSerializer
+from ..models import Banner, FAQ, StaticPage
+from .serializers import BannerSerializer, FAQSerializer, StaticPageSerializer
 
 
 @extend_schema(
@@ -43,6 +45,29 @@ class FAQListView(generics.ListAPIView):
 class FAQDetailView(generics.RetrieveAPIView):
     queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
+
+
+@extend_schema(
+    tags=['static-pages'],
+    summary="Retrieve static page by type",
+    description="Retrieve a static page by its type (terms, privacy_policy, acham_history, work_with_us)."
+)
+class StaticPageByTypeView(generics.RetrieveAPIView):
+    """Retrieve a static page by its type."""
+    queryset = StaticPage.objects.all()
+    serializer_class = StaticPageSerializer
+    lookup_field = 'page_type'
+    lookup_url_kwarg = 'page_type'
+
+
+@extend_schema(
+    tags=['static-pages'],
+    summary="List all static pages",
+    description="Retrieve a list of all static pages."
+)
+class StaticPageListView(generics.ListAPIView):
+    queryset = StaticPage.objects.all()
+    serializer_class = StaticPageSerializer
 
 
 # Create your views here.

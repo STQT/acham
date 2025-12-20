@@ -71,3 +71,43 @@ class FAQ(models.Model):
 
     def __str__(self):
         return self.question
+
+
+class StaticPage(models.Model):
+    """Model for static pages like Terms, Privacy Policy, etc."""
+    
+    class PageType(models.TextChoices):
+        TERMS = "terms", _("Terms and Conditions")
+        PRIVACY_POLICY = "privacy_policy", _("Privacy Policy")
+        ACHAM_HISTORY = "acham_history", _("Acham History")
+        WORK_WITH_US = "work_with_us", _("Work With Us")
+    
+    page_type = models.CharField(
+        max_length=50,
+        choices=PageType.choices,
+        unique=True,
+        verbose_name=_("Page Type"),
+        help_text=_("Type of static page")
+    )
+    
+    title = models.CharField(
+        max_length=255,
+        verbose_name=_("Title"),
+        help_text=_("Page title")
+    )
+    
+    content = models.TextField(
+        verbose_name=_("Content"),
+        help_text=_("Page content (HTML allowed)")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['page_type']
+        verbose_name = _("Static Page")
+        verbose_name_plural = _("Static Pages")
+    
+    def __str__(self):
+        return f"{self.get_page_type_display()} - {self.title}"
