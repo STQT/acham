@@ -140,34 +140,58 @@ class PaymentInitiateView(APIView):
             ]
 
         # Determine currency for OCTO:
-        # - OCTO accepts UZS and CLS (convertible sums)
-        # - For non-Uzbekistan + Visa/MC: use CLS (convertible sums) to avoid conversion
-        # - For Uzbekistan or if currency is already UZS: use UZS
+        # - OCTO accepts ONLY UZS and CLS (convertible sums)
+        # - For non-Uzbekistan + USD: use CLS (convertible sums) to avoid conversion
+        # - For Uzbekistan + USD: convert to UZS
+        # - For UZS or CLS: use as-is
         # Get USD to UZS exchange rate from database
         USD_TO_UZS_RATE = CurrencyRate.get_usd_rate()
         
-        if currency == "USD" and not is_uzbekistan:
-            # For non-Uzbekistan countries with USD, use CLS (convertible sums)
-            # This allows payment in original currency without conversion
-            octo_currency = "CLS"
-            octo_total_sum = order.total_amount
-            logger.info(f"Using CLS currency for non-Uzbekistan country with USD amount: {octo_total_sum}")
-            # Keep basket prices in USD for CLS
-            # Basket prices should remain as-is for CLS
-        elif currency == "USD" and is_uzbekistan:
-            # For Uzbekistan, convert USD to UZS
-            octo_currency = "UZS"
-            octo_total_sum = order.total_amount * USD_TO_UZS_RATE
-            logger.info(f"Converting USD to UZS for Uzbekistan: {order.total_amount} USD -> {octo_total_sum} UZS")
-            # Convert basket item prices from USD to UZS
-            for basket_item in basket:
-                if isinstance(basket_item.get("price"), (int, float)):
-                    basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
-        else:
-            # Currency is already UZS or CLS
-            octo_currency = currency if currency in ["UZS", "CLS"] else "UZS"
+        # Ensure is_uzbekistan is a boolean (not None)
+        is_uzbekistan = bool(is_uzbekistan)
+        
+        if currency == "USD":
+            if is_uzbekistan:
+                # For Uzbekistan, convert USD to UZS
+                octo_currency = "UZS"
+                octo_total_sum = order.total_amount * USD_TO_UZS_RATE
+                logger.info(f"Converting USD to UZS for Uzbekistan: {order.total_amount} USD -> {octo_total_sum} UZS")
+                # Convert basket item prices from USD to UZS
+                for basket_item in basket:
+                    if isinstance(basket_item.get("price"), (int, float)):
+                        basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
+            else:
+                # For non-Uzbekistan countries with USD, use CLS (convertible sums)
+                # This allows payment in original currency without conversion
+                octo_currency = "CLS"
+                octo_total_sum = order.total_amount
+                logger.info(f"Using CLS currency for non-Uzbekistan country with USD amount: {octo_total_sum}")
+                # Keep basket prices in USD for CLS
+        elif currency in ["UZS", "CLS"]:
+            # Currency is already UZS or CLS, use as-is
+            octo_currency = currency
             octo_total_sum = order.total_amount
             logger.info(f"Using currency {octo_currency} with amount: {octo_total_sum}")
+        else:
+            # Unknown currency, default to UZS and convert if needed
+            logger.warning(f"Unknown currency '{currency}', defaulting to UZS. Order currency: {order.currency}")
+            octo_currency = "UZS"
+            # If order currency is USD, convert to UZS
+            if order.currency == "USD":
+                octo_total_sum = order.total_amount * USD_TO_UZS_RATE
+                logger.info(f"Converting {order.currency} to UZS: {order.total_amount} {order.currency} -> {octo_total_sum} UZS")
+                # Convert basket item prices
+                for basket_item in basket:
+                    if isinstance(basket_item.get("price"), (int, float)):
+                        basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
+            else:
+                octo_total_sum = order.total_amount
+                logger.info(f"Using amount as-is: {octo_total_sum} {octo_currency}")
+        
+        # Final validation: ensure octo_currency is valid for OCTO API
+        if octo_currency not in ["UZS", "CLS"]:
+            logger.error(f"Invalid octo_currency '{octo_currency}', forcing to UZS")
+            octo_currency = "UZS"
         
         logger.info(f"Payment methods: {payment_methods}, OCTO currency: {octo_currency}")
 

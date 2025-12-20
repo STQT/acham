@@ -94,9 +94,14 @@ class OctoService:
             logger.info("OCTO credentials not configured, using test mode simulation")
             return cls._simulate_prepare_payment(shop_transaction_id, total_sum, return_url)
 
-        # OCTO API accepts UZS and CLS (convertible sums) currencies
+        # OCTO API accepts ONLY UZS and CLS (convertible sums) currencies
         # Default to UZS if not specified or invalid
-        valid_currency = currency if currency in ["UZS", "CLS"] else "UZS"
+        # This is a final safety check - currency should already be validated before calling this method
+        if currency not in ["UZS", "CLS"]:
+            logger.warning(f"Invalid currency '{currency}' passed to OCTO API, defaulting to UZS")
+            valid_currency = "UZS"
+        else:
+            valid_currency = currency
         
         # Default payment methods: all methods
         if payment_methods is None:
