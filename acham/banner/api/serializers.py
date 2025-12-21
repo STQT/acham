@@ -1,30 +1,5 @@
 from rest_framework import serializers
-from ..models import Banner, FAQ, StaticPage, ContactMessage
-
-class BannerSerializer(serializers.ModelSerializer):
-    """Serializer for Banner model."""
-    
-    class Meta:
-        model = Banner
-        fields = [
-            'id',
-            'title',
-            'video',
-            'image',
-            'is_active',
-            'created_at',
-            'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-    def get_video_url(self, obj) -> str | None:
-        """Get the video URL for the banner."""
-        if obj.video:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.video.url)
-            return obj.video.url
-        return None
+from ..models import FAQ, StaticPage, ContactMessage
 
 class FAQSerializer(serializers.ModelSerializer):
     """Serializer for FAQ model."""
@@ -43,6 +18,7 @@ class FAQSerializer(serializers.ModelSerializer):
 
 class StaticPageSerializer(serializers.ModelSerializer):
     """Serializer for StaticPage model."""
+    image_url = serializers.SerializerMethodField()
     
     class Meta:
         model = StaticPage
@@ -50,11 +26,22 @@ class StaticPageSerializer(serializers.ModelSerializer):
             'id',
             'page_type',
             'title',
+            'image',
+            'image_url',
             'content',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'image_url']
+    
+    def get_image_url(self, obj):
+        """Get the full URL for the image."""
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):

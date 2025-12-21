@@ -3,28 +3,8 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework import status
 
-from ..models import Banner, FAQ, StaticPage, ContactMessage
-from .serializers import BannerSerializer, FAQSerializer, StaticPageSerializer, ContactMessageSerializer
-
-
-@extend_schema(
-    tags=['banners'],
-    summary="List all banners",
-    description="Retrieve a list of all available banners."
-)
-class BannerListView(generics.ListAPIView):
-    queryset = Banner.objects.all()
-    serializer_class = BannerSerializer
-
-
-@extend_schema(
-    tags=['banners'],
-    summary="Retrieve banner details",
-    description="Retrieve detailed information about a specific banner by ID."
-)
-class BannerDetailView(generics.RetrieveAPIView):
-    queryset = Banner.objects.all()
-    serializer_class = BannerSerializer
+from ..models import FAQ, StaticPage, ContactMessage
+from .serializers import FAQSerializer, StaticPageSerializer, ContactMessageSerializer
 
 
 @extend_schema(
