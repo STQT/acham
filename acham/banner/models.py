@@ -38,6 +38,7 @@ class StaticPage(models.Model):
         ACHAM_HISTORY = "acham_history", _("Acham History")
         WORK_WITH_US = "work_with_us", _("Work With Us")
         DECLARATION_OF_CONFORMITY = "declaration_of_conformity", _("Declaration of Conformity")
+        RETURNS = "returns", _("Returns")
     
     page_type = models.CharField(
         max_length=50,
@@ -117,12 +118,6 @@ class ContactMessage(models.Model):
         help_text=_("Contact's message")
     )
     
-    subscribe_to_newsletter = models.BooleanField(
-        default=False,
-        verbose_name=_("Subscribe to Newsletter"),
-        help_text=_("Whether the contact wants to subscribe to newsletter")
-    )
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -133,3 +128,35 @@ class ContactMessage(models.Model):
     
     def __str__(self):
         return f"Contact from {self.first_name} {self.last_name} ({self.email}) - {self.created_at.strftime('%Y-%m-%d')}"
+
+
+class ReturnRequest(models.Model):
+    """Model for storing return request form submissions."""
+    
+    order_number = models.CharField(
+        max_length=255,
+        verbose_name=_("Order Number"),
+        help_text=_("Order number for the return request")
+    )
+    
+    email_or_phone = models.CharField(
+        max_length=255,
+        verbose_name=_("Email or Phone Number"),
+        help_text=_("Contact email or phone number")
+    )
+    
+    message = models.TextField(
+        verbose_name=_("Message"),
+        help_text=_("Return request message/details")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = _("Return Request")
+        verbose_name_plural = _("Return Requests")
+    
+    def __str__(self):
+        return f"Return request for order {self.order_number} - {self.created_at.strftime('%Y-%m-%d')}"

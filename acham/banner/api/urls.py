@@ -14,4 +14,7 @@ urlpatterns = [
     
     # Contact form endpoint
     path('contact/', views.ContactMessageCreateView.as_view(), name='contact-create'),
+    
+    # Return request endpoint
+    path('return-request/', views.ReturnRequestCreateView.as_view(), name='return-request-create'),
 ]

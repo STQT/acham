@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import FAQ, StaticPage, ContactMessage
+from .models import FAQ, StaticPage, ContactMessage, ReturnRequest
 # Register your models here.
 
 @admin.register(FAQ)
@@ -58,12 +58,10 @@ class ContactMessageAdmin(admin.ModelAdmin):
         'email',
         'phone',
         'subject',
-        'subscribe_to_newsletter',
         'created_at'
     ]
 
     list_filter = [
-        'subscribe_to_newsletter',
         'created_at'
     ]
 
@@ -83,7 +81,39 @@ class ContactMessageAdmin(admin.ModelAdmin):
         'phone',
         'subject',
         'message',
-        'subscribe_to_newsletter',
+        'created_at',
+        'updated_at'
+    ]
+
+    readonly_fields = ['created_at', 'updated_at']
+
+    ordering = ['-created_at']
+
+
+@admin.register(ReturnRequest)
+class ReturnRequestAdmin(admin.ModelAdmin):
+    """Admin configuration for ReturnRequest model."""
+
+    list_display = [
+        'order_number',
+        'email_or_phone',
+        'created_at'
+    ]
+
+    list_filter = [
+        'created_at'
+    ]
+
+    search_fields = [
+        'order_number',
+        'email_or_phone',
+        'message'
+    ]
+
+    fields = [
+        'order_number',
+        'email_or_phone',
+        'message',
         'created_at',
         'updated_at'
     ]

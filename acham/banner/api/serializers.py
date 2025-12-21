@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import FAQ, StaticPage, ContactMessage
+from ..models import FAQ, StaticPage, ContactMessage, ReturnRequest
 
 class FAQSerializer(serializers.ModelSerializer):
     """Serializer for FAQ model."""
@@ -57,7 +57,22 @@ class ContactMessageSerializer(serializers.ModelSerializer):
             'phone',
             'subject',
             'message',
-            'subscribe_to_newsletter',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ReturnRequestSerializer(serializers.ModelSerializer):
+    """Serializer for ReturnRequest model."""
+    
+    class Meta:
+        model = ReturnRequest
+        fields = [
+            'id',
+            'order_number',
+            'email_or_phone',
+            'message',
             'created_at',
             'updated_at'
         ]
