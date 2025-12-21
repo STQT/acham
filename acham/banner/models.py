@@ -111,3 +111,60 @@ class StaticPage(models.Model):
     
     def __str__(self):
         return f"{self.get_page_type_display()} - {self.title}"
+
+
+class ContactMessage(models.Model):
+    """Model for storing contact form submissions."""
+    
+    first_name = models.CharField(
+        max_length=150,
+        verbose_name=_("First Name"),
+        help_text=_("Contact's first name")
+    )
+    
+    last_name = models.CharField(
+        max_length=150,
+        verbose_name=_("Last Name"),
+        help_text=_("Contact's last name")
+    )
+    
+    email = models.EmailField(
+        verbose_name=_("Email"),
+        help_text=_("Contact's email address")
+    )
+    
+    phone = models.CharField(
+        max_length=64,
+        blank=True,
+        verbose_name=_("Phone Number"),
+        help_text=_("Contact's phone number")
+    )
+    
+    subject = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Subject"),
+        help_text=_("Message subject/title")
+    )
+    
+    message = models.TextField(
+        verbose_name=_("Message"),
+        help_text=_("Contact's message")
+    )
+    
+    subscribe_to_newsletter = models.BooleanField(
+        default=False,
+        verbose_name=_("Subscribe to Newsletter"),
+        help_text=_("Whether the contact wants to subscribe to newsletter")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = _("Contact Message")
+        verbose_name_plural = _("Contact Messages")
+    
+    def __str__(self):
+        return f"Contact from {self.first_name} {self.last_name} ({self.email}) - {self.created_at.strftime('%Y-%m-%d')}"

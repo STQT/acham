@@ -3,8 +3,8 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework import status
 
-from ..models import Banner, FAQ, StaticPage
-from .serializers import BannerSerializer, FAQSerializer, StaticPageSerializer
+from ..models import Banner, FAQ, StaticPage, ContactMessage
+from .serializers import BannerSerializer, FAQSerializer, StaticPageSerializer, ContactMessageSerializer
 
 
 @extend_schema(
@@ -68,6 +68,18 @@ class StaticPageByTypeView(generics.RetrieveAPIView):
 class StaticPageListView(generics.ListAPIView):
     queryset = StaticPage.objects.all()
     serializer_class = StaticPageSerializer
+
+
+@extend_schema(
+    tags=['contact'],
+    summary="Submit contact form",
+    description="Submit a contact form message."
+)
+class ContactMessageCreateView(generics.CreateAPIView):
+    """Create a new contact message."""
+    queryset = ContactMessage.objects.all()
+    serializer_class = ContactMessageSerializer
+    permission_classes = []  # Allow anonymous users to submit contact forms
 
 
 # Create your views here.

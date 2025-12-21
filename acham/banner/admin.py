@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Banner, FAQ, StaticPage
+from .models import Banner, FAQ, StaticPage, ContactMessage
 # Register your models here.
 
 @admin.register(Banner)
@@ -80,3 +80,48 @@ class StaticPageAdmin(admin.ModelAdmin):
     ]
 
     readonly_fields = []
+
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    """Admin configuration for ContactMessage model."""
+
+    list_display = [
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'subject',
+        'subscribe_to_newsletter',
+        'created_at'
+    ]
+
+    list_filter = [
+        'subscribe_to_newsletter',
+        'created_at'
+    ]
+
+    search_fields = [
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'subject',
+        'message'
+    ]
+
+    fields = [
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'subject',
+        'message',
+        'subscribe_to_newsletter',
+        'created_at',
+        'updated_at'
+    ]
+
+    readonly_fields = ['created_at', 'updated_at']
+
+    ordering = ['-created_at']

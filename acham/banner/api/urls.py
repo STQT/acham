@@ -15,4 +15,7 @@ urlpatterns = [
     # Static pages endpoints
     path('pages/', views.StaticPageListView.as_view(), name='static-page-list'),
     path('pages/<str:page_type>/', views.StaticPageByTypeView.as_view(), name='static-page-by-type'),
+    
+    # Contact form endpoint
+    path('contact/', views.ContactMessageCreateView.as_view(), name='contact-create'),
 ]

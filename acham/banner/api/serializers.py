@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Banner, FAQ, StaticPage
+from ..models import Banner, FAQ, StaticPage, ContactMessage
 
 class BannerSerializer(serializers.ModelSerializer):
     """Serializer for Banner model."""
@@ -51,6 +51,26 @@ class StaticPageSerializer(serializers.ModelSerializer):
             'page_type',
             'title',
             'content',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    """Serializer for ContactMessage model."""
+    
+    class Meta:
+        model = ContactMessage
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'subject',
+            'message',
+            'subscribe_to_newsletter',
             'created_at',
             'updated_at'
         ]
