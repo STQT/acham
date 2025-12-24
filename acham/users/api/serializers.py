@@ -13,6 +13,8 @@ from acham.users.models import PhoneOTP
 from acham.users.services.otp import OTPError
 from acham.users.services.otp import send_phone_otp
 from acham.users.services.otp import verify_phone_otp
+from acham.users.services.recaptcha import RecaptchaError
+from acham.users.services.recaptcha import verify_recaptcha
 
 User = get_user_model()
 
@@ -229,11 +231,35 @@ class PhoneRegistrationConfirmSerializer(serializers.Serializer[dict[str, Any]])
 
 class PhoneOTPLoginRequestSerializer(serializers.Serializer[dict[str, str]]):
     phone = serializers.CharField(validators=[User.phone_validator])
+    recaptcha_token = serializers.CharField(required=True, write_only=True)
 
     default_error_messages = {
         "not_found": _("User with this phone number does not exist."),
         "inactive": _("User account is disabled."),
+        "recaptcha_required": _("reCAPTCHA verification is required."),
     }
+
+    def validate_recaptcha_token(self, value: str) -> str:
+        """Validate reCAPTCHA token before processing the request."""
+        if not value:
+            raise serializers.ValidationError(self.error_messages["recaptcha_required"])
+        
+        request = self.context.get("request")
+        remote_ip = None
+        if request:
+            # Get client IP address
+            x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+            if x_forwarded_for:
+                remote_ip = x_forwarded_for.split(",")[0].strip()
+            else:
+                remote_ip = request.META.get("REMOTE_ADDR")
+        
+        try:
+            verify_recaptcha(token=value, remote_ip=remote_ip)
+        except RecaptchaError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+        
+        return value
 
     def validate_phone(self, value: str) -> str:
         normalized = normalize_phone(value)
@@ -245,6 +271,9 @@ class PhoneOTPLoginRequestSerializer(serializers.Serializer[dict[str, str]]):
         return normalized
 
     def create(self, validated_data: dict[str, str]) -> dict[str, str]:
+        # Remove recaptcha_token from validated_data as it's not needed after validation
+        validated_data.pop("recaptcha_token", None)
+        
         phone = validated_data["phone"]
         purpose = PhoneOTP.PURPOSE_LOGIN
         try:
