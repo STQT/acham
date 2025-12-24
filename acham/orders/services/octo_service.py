@@ -79,11 +79,12 @@ class OctoService:
         return_url: str,
         notify_url: str,
         language: str = "uz",
-        currency: str = "USD",
+        currency: str = "UZS",
         description: str = "",
         auto_capture: bool = True,
         ttl: int = 15,  # minutes
         init_time: str = None,
+        payment_methods: List[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         shop_id = cls._get_shop_id()
         secret = cls._get_secret()
@@ -93,10 +94,22 @@ class OctoService:
             logger.info("OCTO credentials not configured, using test mode simulation")
             return cls._simulate_prepare_payment(shop_transaction_id, total_sum, return_url)
 
-        # OCTO API only accepts UZS currency
-        # Currency conversion should be done before calling this method
-        # Always use UZS for OCTO API
-        valid_currency = "UZS"
+        # OCTO API accepts ONLY UZS (CLS support may vary by shop/test mode)
+        # Always use UZS to ensure compatibility
+        # This is a final safety check - currency should already be validated before calling this method
+        if currency != "UZS":
+            logger.warning(f"Currency '{currency}' may not be supported by OCTO API, forcing to UZS")
+            valid_currency = "UZS"
+        else:
+            valid_currency = currency
+        
+        # Default payment methods: all methods
+        if payment_methods is None:
+            payment_methods = [
+                {"method": "bank_card"},
+                {"method": "uzcard"},
+                {"method": "humo"},
+            ]
         
         url = f"{cls._get_api_url()}/prepare_payment"
         payload = {
@@ -110,11 +123,7 @@ class OctoService:
             "currency": valid_currency,
             "description": description,
             "basket": basket,
-            "payment_methods": [
-                {"method": "bank_card"},
-                {"method": "uzcard"},
-                {"method": "humo"},
-            ],
+            "payment_methods": payment_methods,
             "return_url": return_url,
             "notify_url": notify_url,
             "language": language,

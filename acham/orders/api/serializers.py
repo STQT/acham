@@ -250,10 +250,25 @@ class OrderCreateSerializer(serializers.Serializer):
                 status=OrderStatus.PENDING_PAYMENT,
             )
 
+            # Determine if shipping address is in Uzbekistan
+            is_uzbekistan = False
+            if shipping_address_data:
+                country = shipping_address_data.get("country", "").strip()
+                if country:
+                    country_lower = country.lower()
+                    is_uzbekistan = country_lower in [
+                        "uzbekistan", "узбекистан", "o'zbekiston", 
+                        "ozbekiston", "uzbek", "uz"
+                    ]
+            
             items_queryset = cart.items.select_related("product").all()
             for item in items_queryset:
                 product = item.product
-                unit_price = Decimal(product.price)
+                # Use price_uzs if shipping to Uzbekistan, otherwise use price (USD)
+                if is_uzbekistan:
+                    unit_price = Decimal(product.price_uzs)
+                else:
+                    unit_price = Decimal(product.price)
                 line_total = unit_price * item.quantity
                 subtotal += line_total
                 total_items += item.quantity
@@ -279,10 +294,17 @@ class OrderCreateSerializer(serializers.Serializer):
                     total_price=line_total,
                 )
 
+            # Set currency based on shipping country
+            if is_uzbekistan:
+                order.currency = "UZS"
+            else:
+                order.currency = "USD"
+            
             order.subtotal_amount = subtotal
             order.total_items = total_items
             order.total_amount = subtotal - discount_amount + shipping_amount
             order.save(update_fields=[
+                "currency",
                 "subtotal_amount",
                 "total_items",
                 "total_amount",

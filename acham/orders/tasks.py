@@ -216,3 +216,81 @@ def send_order_notification(self, order_id: int, language: str | None = None) ->
 
     return {"status": "queued", "order_number": order.number, "language": language, "results": results}
 
+
+@shared_task(bind=True, max_retries=3)
+def update_currency_rates(self) -> dict[str, Any]:
+    """
+    Update currency exchange rates from Central Bank of Uzbekistan API.
+    Fetches rates from https://cbu.uz/uz/arkhiv-kursov-valyut/json/
+    """
+    from datetime import date
+    from decimal import Decimal
+    import requests
+    from django.db import transaction as db_transaction
+    
+    from acham.orders.models import CurrencyRate
+    
+    try:
+        # API endpoint for currency rates (JSON format)
+        # Note: This endpoint returns today's rates by default
+        api_url = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
+        
+        logger.info(f"Fetching currency rates from {api_url}")
+        response = requests.get(api_url, timeout=30)
+        response.raise_for_status()
+        
+        rates_data = response.json()
+        today = date.today()
+        updated_count = 0
+        created_count = 0
+        
+        # CBU API structure:
+        # - Ccy: Currency code (e.g., "USD", "EUR")
+        # - Rate: Exchange rate (1 foreign currency = X UZS)
+        # - Date: Date string
+        with db_transaction.atomic():
+            for rate_info in rates_data:
+                code = rate_info.get('Ccy') or rate_info.get('code')
+                if not code:
+                    continue
+                
+                # CBU API returns rate as string, need to convert
+                rate_str = rate_info.get('Rate') or rate_info.get('rate', '0')
+                try:
+                    rate = Decimal(str(rate_str))
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid rate value for {code}: {rate_str}")
+                    continue
+                
+                # Update or create currency rate
+                # Note: We use code as unique identifier, and update date/rate if code exists
+                currency_rate, created = CurrencyRate.objects.update_or_create(
+                    code=code.upper(),
+                    defaults={
+                        'rate': rate,
+                        'date': today,
+                    }
+                )
+                
+                if created:
+                    created_count += 1
+                    logger.info(f"Created currency rate: {code} = {rate} UZS")
+                else:
+                    updated_count += 1
+                    logger.info(f"Updated currency rate: {code} = {rate} UZS")
+        
+        logger.info(f"Currency rates update completed: {created_count} created, {updated_count} updated")
+        return {
+            "status": "success",
+            "created": created_count,
+            "updated": updated_count,
+            "date": str(today),
+        }
+        
+    except requests.exceptions.RequestException as exc:
+        logger.error(f"Failed to fetch currency rates: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+    except Exception as exc:
+        logger.error(f"Error updating currency rates: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+

@@ -83,14 +83,15 @@ class Product(models.Model):
         OTHER = "other", _("Other")
     
     class ProductSize(models.TextChoices):
-        XS = "xs", _("XS")
-        S = "s", _("S")
-        M = "m", _("M")
-        L = "l", _("L")
-        XL = "xl", _("XL")
-        XXL = "xxl", _("XXL")
-        XXXL = "xxxl", _("XXXL")
-        ONE_SIZE = "one_size", _("One Size")
+        # XS = "xs", _("XS")
+        # S = "s", _("S")
+        # M = "m", _("M")
+        # L = "l", _("L")
+        # XL = "xl", _("XL")
+        # XXL = "xxl", _("XXL")
+        # XXXL = "xxxl", _("XXXL")
+        # ONE_SIZE = "one_size", _("One Size")
+        OVERSIZE = "oversize", _("Oversize")
     
     collection = models.ForeignKey(
         Collection,
@@ -158,7 +159,14 @@ class Product(models.Model):
         max_digits=10,
         decimal_places=2,
         verbose_name=_("Price"),
-        help_text=_("Product price")
+        help_text=_("Product price (USD)")
+    )
+    
+    price_uzs = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name=_("Price (UZS)"),
+        help_text=_("Product price in Uzbekistani Som (required for Uzbekistan)")
     )
     
     is_available = models.BooleanField(

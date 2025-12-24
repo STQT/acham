@@ -1,6 +1,7 @@
 import os
 
 from celery import Celery
+from celery.schedules import crontab
 from celery.signals import setup_logging
 
 # set the default Django settings module for the 'celery' program.
@@ -26,3 +27,11 @@ def config_loggers(*args, **kwargs):
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
+
+# Configure periodic tasks
+app.conf.beat_schedule = {
+    "update-currency-rates": {
+        "task": "acham.orders.tasks.update_currency_rates",
+        "schedule": crontab(hour=9, minute=0),  # Run daily at 9:00 AM Tashkent time
+    },
+}

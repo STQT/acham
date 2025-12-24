@@ -2,6 +2,17 @@ from rest_framework import serializers
 from ..models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem, Collection
 
 
+def is_uzbekistan_country(country: str | None) -> bool:
+    """Check if country is Uzbekistan."""
+    if not country:
+        return False
+    country_lower = country.lower().strip()
+    return country_lower in [
+        "uzbekistan", "узбекистан", "o'zbekiston", 
+        "ozbekiston", "uzbek", "uz", "uzb"
+    ]
+
+
 class CollectionSerializer(serializers.ModelSerializer):
     """Serializer for Collection model."""
     
@@ -81,6 +92,8 @@ class ProductSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     favorite_count = serializers.SerializerMethodField()
     share_count = serializers.SerializerMethodField()
+    display_price = serializers.SerializerMethodField()
+    display_currency = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -98,6 +111,9 @@ class ProductSerializer(serializers.ModelSerializer):
             'detailed_description',
             'care_instructions',
             'price',
+            'price_uzs',
+            'display_price',
+            'display_currency',
             'is_available',
             'shots',
             'is_favorited',
@@ -123,6 +139,38 @@ class ProductSerializer(serializers.ModelSerializer):
         """Get the number of times this product was shared."""
         return obj.shares.count()
     
+    def get_display_price(self, obj):
+        """Get display price based on user's country."""
+        request = self.context.get('request')
+        country = None
+        
+        if request:
+            # Check query parameter first
+            country = request.query_params.get('country')
+            # If not in query, check header
+            if not country:
+                country = request.META.get('HTTP_X_COUNTRY') or request.META.get('HTTP_COUNTRY')
+        
+        if is_uzbekistan_country(country):
+            return str(obj.price_uzs)
+        return str(obj.price)
+    
+    def get_display_currency(self, obj):
+        """Get display currency based on user's country."""
+        request = self.context.get('request')
+        country = None
+        
+        if request:
+            # Check query parameter first
+            country = request.query_params.get('country')
+            # If not in query, check header
+            if not country:
+                country = request.META.get('HTTP_X_COUNTRY') or request.META.get('HTTP_COUNTRY')
+        
+        if is_uzbekistan_country(country):
+            return 'UZS'
+        return 'USD'
+    
     def validate_price(self, value):
         """Validate that price is positive."""
         if value <= 0:
@@ -138,6 +186,8 @@ class ProductListSerializer(serializers.ModelSerializer):
     collection = CollectionSerializer(read_only=True)
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     size_display = serializers.CharField(source='get_size_display', read_only=True)
+    display_price = serializers.SerializerMethodField()
+    display_currency = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -153,6 +203,9 @@ class ProductListSerializer(serializers.ModelSerializer):
             'color',
             'short_description',
             'price',
+            'price_uzs',
+            'display_price',
+            'display_currency',
             'is_available',
             'primary_image',
             'shots',
@@ -168,6 +221,38 @@ class ProductListSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(primary_shot.image.url)
             return primary_shot.image.url
         return None
+    
+    def get_display_price(self, obj):
+        """Get display price based on user's country."""
+        request = self.context.get('request')
+        country = None
+        
+        if request:
+            # Check query parameter first
+            country = request.query_params.get('country')
+            # If not in query, check header
+            if not country:
+                country = request.META.get('HTTP_X_COUNTRY') or request.META.get('HTTP_COUNTRY')
+        
+        if is_uzbekistan_country(country):
+            return str(obj.price_uzs)
+        return str(obj.price)
+    
+    def get_display_currency(self, obj):
+        """Get display currency based on user's country."""
+        request = self.context.get('request')
+        country = None
+        
+        if request:
+            # Check query parameter first
+            country = request.query_params.get('country')
+            # If not in query, check header
+            if not country:
+                country = request.META.get('HTTP_X_COUNTRY') or request.META.get('HTTP_COUNTRY')
+        
+        if is_uzbekistan_country(country):
+            return 'UZS'
+        return 'USD'
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
@@ -185,6 +270,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             'detailed_description',
             'care_instructions',
             'price',
+            'price_uzs',
             'is_available'
         ]
     
@@ -192,6 +278,12 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         """Validate that price is positive."""
         if value <= 0:
             raise serializers.ValidationError("Price must be greater than zero.")
+        return value
+    
+    def validate_price_uzs(self, value):
+        """Validate that price_uzs is positive."""
+        if value <= 0:
+            raise serializers.ValidationError("Price (UZS) must be greater than zero.")
         return value
 
 

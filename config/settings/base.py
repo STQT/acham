@@ -589,6 +589,12 @@ OCTO_SHOP_ID = env("OCTO_SHOP_ID", default=None)
 OCTO_SECRET = env("OCTO_SECRET", default=None)
 OCTO_TEST_MODE = env.bool("OCTO_TEST_MODE", default=False)
 
+# Google reCAPTCHA
+# ------------------------------------------------------------------------------
+RECAPTCHA_SECRET_KEY = env("RECAPTCHA_SECRET_KEY", default=None)
+RECAPTCHA_SITE_KEY = env("RECAPTCHA_SITE_KEY", default=None)  # For frontend use
+RECAPTCHA_SCORE_THRESHOLD = env.float("RECAPTCHA_SCORE_THRESHOLD", default=0.5)  # For v3
+
 # Frontend URL for payment redirects
 # ------------------------------------------------------------------------------
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:4200")

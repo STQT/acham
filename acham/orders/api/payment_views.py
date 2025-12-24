@@ -21,6 +21,7 @@ from acham.orders.models import (
     OrderStatus,
     OrderStatusHistory,
     PaymentTransaction,
+    CurrencyRate,
 )
 from acham.orders.services.octo_service import OctoService
 
@@ -109,25 +110,87 @@ class PaymentInitiateView(APIView):
         if language not in ["uz", "ru", "en"]:
             language = "uz"
 
-        # Get currency from request (UZS for Uzbekistan, USD for others)
+        # Get currency from request
         currency = request.GET.get("currency", order.currency)
-        if currency not in ["UZS", "USD"]:
+        if currency not in ["UZS", "USD", "CLS"]:
             # Default to order currency or USD
-            currency = order.currency if order.currency in ["UZS", "USD"] else "USD"
+            currency = order.currency if order.currency in ["UZS", "USD", "CLS"] else "USD"
 
-        # OCTO API only accepts UZS currency, so we need to convert USD to UZS if needed
-        # Exchange rate: 1 USD = 12500 UZS (should match frontend rate)
-        USD_TO_UZS_RATE = Decimal("12500")
-        octo_currency = "UZS"  # Always use UZS for OCTO
-        octo_total_sum = order.total_amount
+        # Determine country from shipping address
+        shipping_address = order.addresses.filter(address_type='shipping').first()
+        country = shipping_address.country if shipping_address else None
+        is_uzbekistan = country and (
+            country.lower() in ["uzbekistan", "узбекистан", "o'zbekiston", "ozbekiston", "uzbek"]
+        )
         
-        # Convert basket prices if currency is USD
-        if currency == "USD":
+        logger.info(f"Payment initiation - Country: {country}, Is Uzbekistan: {is_uzbekistan}, Request currency: {currency}")
+
+        # Determine payment methods based on country
+        # If country is not Uzbekistan, only allow bank_card (Visa/Mastercard)
+        if is_uzbekistan:
+            payment_methods = [
+                {"method": "bank_card"},
+                {"method": "uzcard"},
+                {"method": "humo"},
+            ]
+        else:
+            # For non-Uzbekistan countries, only Visa/Mastercard
+            payment_methods = [
+                {"method": "bank_card"},
+            ]
+
+        # Determine currency for OCTO:
+        # - OCTO accepts ONLY UZS (CLS may not be available for all shops/test mode)
+        # - If order currency is already UZS (from price_uzs), use as-is
+        # - Otherwise convert USD to UZS using exchange rate from database
+        # Get USD to UZS exchange rate from database
+        USD_TO_UZS_RATE = CurrencyRate.get_usd_rate()
+        
+        # Ensure is_uzbekistan is a boolean (not None)
+        is_uzbekistan = bool(is_uzbekistan)
+        
+        # Always use UZS for OCTO API (CLS support may vary by shop/test mode)
+        octo_currency = "UZS"
+        
+        # If order currency is UZS, it means prices were already set using price_uzs
+        # No conversion needed - use amounts as-is
+        if order.currency == "UZS":
+            octo_total_sum = order.total_amount
+            logger.info(f"Order already in UZS (using price_uzs): {octo_total_sum} UZS - no conversion needed")
+            # Basket items already have correct prices in UZS from order.items.unit_price
+        elif currency == "USD" or order.currency == "USD":
+            # Convert USD to UZS
             octo_total_sum = order.total_amount * USD_TO_UZS_RATE
+            logger.info(f"Converting USD to UZS: {order.total_amount} USD -> {octo_total_sum} UZS (rate: {USD_TO_UZS_RATE})")
             # Convert basket item prices from USD to UZS
             for basket_item in basket:
                 if isinstance(basket_item.get("price"), (int, float)):
                     basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
+        elif currency == "UZS":
+            # Currency is already UZS, use as-is
+            octo_total_sum = order.total_amount
+            logger.info(f"Using currency UZS with amount: {octo_total_sum}")
+        else:
+            # Unknown currency, try to convert from order currency
+            logger.warning(f"Unknown currency '{currency}', order currency: {order.currency}, defaulting to UZS")
+            # If order currency is USD, convert to UZS
+            if order.currency == "USD":
+                octo_total_sum = order.total_amount * USD_TO_UZS_RATE
+                logger.info(f"Converting {order.currency} to UZS: {order.total_amount} {order.currency} -> {octo_total_sum} UZS")
+                # Convert basket item prices
+                for basket_item in basket:
+                    if isinstance(basket_item.get("price"), (int, float)):
+                        basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
+            else:
+                octo_total_sum = order.total_amount
+                logger.info(f"Using amount as-is: {octo_total_sum} UZS")
+        
+        # Final validation: ensure octo_currency is UZS (only supported currency)
+        if octo_currency != "UZS":
+            logger.warning(f"Currency '{octo_currency}' not supported by OCTO, forcing to UZS")
+            octo_currency = "UZS"
+        
+        logger.info(f"Payment methods: {payment_methods}, OCTO currency: {octo_currency}")
 
         # Get current time in OCTO format for init_time using TIME_ZONE from settings
         # timezone.localtime() automatically uses settings.TIME_ZONE
@@ -135,7 +198,7 @@ class PaymentInitiateView(APIView):
         init_time = local_time.strftime("%Y-%m-%d %H:%M:%S")
 
         try:
-            # Call OCTO prepare_payment (always with UZS currency)
+            # Call OCTO prepare_payment with determined currency and payment methods
             octo_response = OctoService.prepare_payment(
                 shop_transaction_id=shop_transaction_id,
                 total_sum=octo_total_sum,
@@ -144,9 +207,10 @@ class PaymentInitiateView(APIView):
                 return_url=return_url,
                 notify_url=notify_url,
                 language=language,
-                currency=octo_currency,  # Always UZS for OCTO
+                currency=octo_currency,  # UZS or CLS depending on country
                 description=f"Order {order.number}",
                 init_time=init_time,
+                payment_methods=payment_methods,  # Filtered based on country
             )
             logger.info(f"OCTO prepare_payment request data: {{'shop_transaction_id': {shop_transaction_id}, 'total_sum': {order.total_amount}, 'user_data': {user_data}, 'basket': {basket}, 'return_url': {return_url}, 'notify_url': {notify_url}, 'language': {language}, 'description': 'Order {order.number}'}}")
             logger.info(f"OCTO prepare_payment raw response: {octo_response}")
@@ -219,8 +283,15 @@ class PaymentInitiateView(APIView):
                     octo_transaction_id=octo_transaction_id,
                     status=PaymentTransaction.Status.PREPARED,
                     amount=order.total_amount,
-                    currency=currency,  # Use currency from request
-                    request_payload={"user_data": user_data, "basket": basket},
+                    currency=currency,  # Store original currency from request
+                    request_payload={
+                        "user_data": user_data, 
+                        "basket": basket,
+                        "country": country,
+                        "is_uzbekistan": is_uzbekistan,
+                        "octo_currency": octo_currency,
+                        "payment_methods": payment_methods,
+                    },
                     response_payload=octo_response,
                     verification_url=octo_pay_url,
                 )
@@ -277,8 +348,15 @@ class PaymentInitiateView(APIView):
                             octo_transaction_id=octo_transaction_id,
                             status=PaymentTransaction.Status.PREPARED,
                             amount=order.total_amount,
-                            currency=currency,  # Use currency from request
-                            request_payload={"user_data": user_data, "basket": basket},
+                            currency=currency,  # Store original currency from request
+                            request_payload={
+                                "user_data": user_data, 
+                                "basket": basket,
+                                "country": country,
+                                "is_uzbekistan": is_uzbekistan,
+                                "octo_currency": octo_currency,
+                                "payment_methods": payment_methods,
+                            },
                             response_payload=octo_response,
                             verification_url=existing_pay_url or "",
                         )
@@ -325,8 +403,15 @@ class PaymentInitiateView(APIView):
                 octo_payment_id=octo_payment_id,
                 status=PaymentTransaction.Status.PREPARED,
                 amount=order.total_amount,
-                currency=currency,  # Use currency from request
-                request_payload={"user_data": user_data, "basket": basket},
+                currency=currency,  # Store original currency from request
+                request_payload={
+                    "user_data": user_data, 
+                    "basket": basket,
+                    "country": country,
+                    "is_uzbekistan": is_uzbekistan,
+                    "octo_currency": octo_currency,
+                    "payment_methods": payment_methods,
+                },
                 response_payload=octo_response,
             )
 
@@ -699,23 +784,42 @@ def payment_notify(request):
         for key, value in payload.items():
             logger.info(f"  - {key}: {value} (type: {type(value).__name__})")
     
-    transaction_id = payload.get("transaction_id") or payload.get("id")
-    if not transaction_id:
+    # OCTO отправляет octo_payment_UUID или octo_payment_id как идентификатор транзакции
+    # Также можно использовать shop_transaction_id для поиска
+    transaction_id = (
+        payload.get("octo_payment_UUID") or 
+        payload.get("octo_payment_id") or 
+        payload.get("transaction_id") or 
+        payload.get("id")
+    )
+    
+    shop_transaction_id = payload.get("shop_transaction_id")
+    
+    if not transaction_id and not shop_transaction_id:
         logger.error("=" * 80)
-        logger.error("OCTO webhook ERROR: missing transaction_id")
+        logger.error("OCTO webhook ERROR: missing transaction identifier")
         logger.error(f"Available payload keys: {list(payload.keys()) if isinstance(payload, dict) else 'not a dict'}")
         logger.error("=" * 80)
-        return Response({"error": "transaction_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "transaction identifier is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    logger.info(f"Looking for payment transaction with octo_transaction_id: {transaction_id}")
+    logger.info(f"Looking for payment transaction with octo_transaction_id: {transaction_id} or shop_transaction_id: {shop_transaction_id}")
     
     try:
-        payment_transaction = PaymentTransaction.objects.get(octo_transaction_id=transaction_id)
+        # Сначала пробуем найти по octo_transaction_id (octo_payment_UUID)
+        if transaction_id:
+            payment_transaction = PaymentTransaction.objects.get(octo_transaction_id=transaction_id)
+        # Если не нашли, пробуем по shop_transaction_id
+        elif shop_transaction_id:
+            payment_transaction = PaymentTransaction.objects.get(shop_transaction_id=shop_transaction_id)
+        else:
+            raise PaymentTransaction.DoesNotExist("No transaction identifier provided")
+            
         logger.info(f"Found payment transaction: ID={payment_transaction.id}, Order={payment_transaction.order.public_id}, Current status={payment_transaction.status}")
     except PaymentTransaction.DoesNotExist:
         logger.error("=" * 80)
         logger.error(f"OCTO webhook ERROR: payment transaction not found")
         logger.error(f"Transaction ID from payload: {transaction_id}")
+        logger.error(f"Shop transaction ID from payload: {shop_transaction_id}")
         logger.error(f"Payload: {payload}")
         logger.error("=" * 80)
         return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -736,14 +840,49 @@ def payment_notify(request):
     logger.info(f"  - Order number: {payment_transaction.order.number}")
     logger.info(f"  - Amount: {payment_transaction.amount} {payment_transaction.currency}")
 
+    # Get payment amount from webhook payload
+    # OCTO sends total_sum in the payment currency (UZS or CLS)
+    payment_amount_from_webhook = payload.get("total_sum")
+    payment_currency_from_webhook = payload.get("currency", "UZS")
+    
+    # If payment was in UZS but order currency is USD, convert back to USD for storage
+    order = payment_transaction.order
+    if payment_currency_from_webhook == "UZS" and order.currency == "USD" and payment_amount_from_webhook:
+        # Convert UZS amount back to USD
+        usd_rate = CurrencyRate.get_usd_rate()
+        converted_amount = Decimal(str(payment_amount_from_webhook)) / usd_rate
+        payment_transaction.amount = converted_amount
+        payment_transaction.currency = "USD"  # Store in order's original currency
+        logger.info(f"Converted payment amount from UZS to USD: {payment_amount_from_webhook} UZS -> {converted_amount} USD (rate: {usd_rate})")
+    elif payment_amount_from_webhook:
+        # For CLS or if currencies match, use the amount as-is
+        payment_transaction.amount = Decimal(str(payment_amount_from_webhook))
+        payment_transaction.currency = order.currency
+        logger.info(f"Payment amount: {payment_transaction.amount} {payment_transaction.currency} (no conversion needed)")
+
     with transaction.atomic():
-        if payment_status == "success" or error_code == 0:
+        # OCTO отправляет статус "succeeded" при успешной оплате
+        # Проверяем успешность: статус "succeeded" или "success", или error_code == 0
+        is_success = (
+            payment_status in ["success", "succeeded"] or 
+            (error_code is not None and error_code == 0)
+        )
+        
+        # Определяем финальный статус платежа
+        if is_success:
             logger.info("Processing SUCCESS status")
             payment_transaction.status = PaymentTransaction.Status.SUCCESS
             payment_transaction.completed_at = timezone.now()
+            
+            # Сохраняем octo_payment_UUID если его еще нет (на случай если он не был сохранен при создании)
+            if not payment_transaction.octo_transaction_id and transaction_id:
+                payment_transaction.octo_transaction_id = transaction_id
+            
+            # Сохраняем octo_payment_id из payload если его еще нет
+            if not payment_transaction.octo_payment_id and transaction_id:
+                payment_transaction.octo_payment_id = transaction_id
 
-            # Update order status
-            order = payment_transaction.order
+            # Update order status (order variable already set above during amount conversion)
             old_order_status = order.status
             logger.info(f"Order status update: {old_order_status} -> PAYMENT_CONFIRMED")
             
@@ -773,10 +912,10 @@ def payment_notify(request):
             else:
                 logger.warning(f"Order {order.public_id} status is {old_order_status}, not updating to PAYMENT_CONFIRMED")
 
-        elif payment_status == "failed" or error_code:
+        elif payment_status in ["failed", "cancelled"] or (error_code and error_code != 0):
             logger.info("Processing FAILED status")
             payment_transaction.status = PaymentTransaction.Status.FAILED
-            payment_transaction.error_code = error_code
+            payment_transaction.error_code = str(error_code) if error_code else None
             payment_transaction.error_message = error_message or _("Payment failed")
             payment_transaction.completed_at = timezone.now()
 

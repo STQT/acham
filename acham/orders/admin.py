@@ -7,6 +7,7 @@ from .models import (
     OrderItem,
     OrderStatusHistory,
     PaymentTransaction,
+    CurrencyRate,
 )
 
 
@@ -154,6 +155,15 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
                 "request_payload",
                 "response_payload",
             ),
-            "classes": ("collapse",),
+            "classes": ("collapse",            ),
         }),
     )
+
+
+@admin.register(CurrencyRate)
+class CurrencyRateAdmin(admin.ModelAdmin):
+    list_display = ("code", "rate", "date", "created_at", "updated_at")
+    list_filter = ("code", "date", "created_at")
+    search_fields = ("code",)
+    ordering = ("-date", "-code")
+    readonly_fields = ("created_at", "updated_at")
