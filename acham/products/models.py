@@ -83,14 +83,15 @@ class Product(models.Model):
         OTHER = "other", _("Other")
     
     class ProductSize(models.TextChoices):
-        XS = "xs", _("XS")
-        S = "s", _("S")
-        M = "m", _("M")
-        L = "l", _("L")
-        XL = "xl", _("XL")
-        XXL = "xxl", _("XXL")
-        XXXL = "xxxl", _("XXXL")
-        ONE_SIZE = "one_size", _("One Size")
+        # XS = "xs", _("XS")
+        # S = "s", _("S")
+        # M = "m", _("M")
+        # L = "l", _("L")
+        # XL = "xl", _("XL")
+        # XXL = "xxl", _("XXL")
+        # XXXL = "xxxl", _("XXXL")
+        # ONE_SIZE = "one_size", _("One Size")
+        OVERSIZE = "oversize", _("Oversize")
     
     collection = models.ForeignKey(
         Collection,

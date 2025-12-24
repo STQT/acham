@@ -160,3 +160,30 @@ class ReturnRequest(models.Model):
     
     def __str__(self):
         return f"Return request for order {self.order_number} - {self.created_at.strftime('%Y-%m-%d')}"
+
+
+class EmailSubscription(models.Model):
+    """Model for storing email newsletter subscriptions."""
+    
+    email = models.EmailField(
+        unique=True,
+        verbose_name=_("Email"),
+        help_text=_("Email address for newsletter subscription")
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_("Active"),
+        help_text=_("Whether this subscription is active")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = _("Email Subscription")
+        verbose_name_plural = _("Email Subscriptions")
+    
+    def __str__(self):
+        return f"Subscription: {self.email} - {self.created_at.strftime('%Y-%m-%d')}"

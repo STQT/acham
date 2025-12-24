@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import FAQ, StaticPage, ContactMessage, ReturnRequest
+from .models import FAQ, StaticPage, ContactMessage, ReturnRequest, EmailSubscription
 # Register your models here.
 
 @admin.register(FAQ)
@@ -114,6 +114,38 @@ class ReturnRequestAdmin(admin.ModelAdmin):
         'order_number',
         'email_or_phone',
         'message',
+        'created_at',
+        'updated_at'
+    ]
+
+    readonly_fields = ['created_at', 'updated_at']
+
+    ordering = ['-created_at']
+
+
+@admin.register(EmailSubscription)
+class EmailSubscriptionAdmin(admin.ModelAdmin):
+    """Admin configuration for EmailSubscription model."""
+
+    list_display = [
+        'email',
+        'is_active',
+        'created_at',
+        'updated_at'
+    ]
+
+    list_filter = [
+        'is_active',
+        'created_at'
+    ]
+
+    search_fields = [
+        'email'
+    ]
+
+    fields = [
+        'email',
+        'is_active',
         'created_at',
         'updated_at'
     ]

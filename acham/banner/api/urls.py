@@ -17,4 +17,7 @@ urlpatterns = [
     
     # Return request endpoint
     path('return-request/', views.ReturnRequestCreateView.as_view(), name='return-request-create'),
+    
+    # Email subscription endpoint
+    path('subscribe/', views.EmailSubscriptionCreateView.as_view(), name='email-subscription-create'),
 ]
