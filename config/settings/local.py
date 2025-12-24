@@ -13,7 +13,13 @@ SECRET_KEY = env(
     default="XRLRa8AP1BZOGXIY8udEK6GrioM5rWdLa623ZTsianfdscThRWwUv87ZKYI5rNQf",
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]  # noqa: S104
+ALLOWED_HOSTS = ["*"]  # noqa: S104
+
+# CORS settings for local development
+# Allow all origins in development to avoid CORS issues
+from corsheaders.defaults import default_headers
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # CACHES
 # ------------------------------------------------------------------------------

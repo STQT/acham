@@ -29,9 +29,11 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
+    "http://0.0.0.0:4200",
     "https://new.acham.uz",
     "https://acham.uz",
 ]
+# Allow CORS for all origins in development (can be overridden in local.py)
 CORS_ALLOW_CREDENTIALS = True
 
 # Local time zone. Choices are
