@@ -25,7 +25,16 @@ from .serializers import (
 @extend_schema(
     tags=["Products"],
     summary="List all products",
-    description="Get a paginated list of all products with filtering and search capabilities"
+    description="Get a paginated list of all products with filtering and search capabilities. Use 'country' query parameter or 'X-Country' header to get prices in local currency (UZS for Uzbekistan, USD otherwise).",
+    parameters=[
+        OpenApiParameter(
+            name='country',
+            description='Country code or name (e.g., "Uzbekistan", "uz") to get prices in local currency',
+            required=False,
+            type=str,
+            location=OpenApiParameter.QUERY
+        ),
+    ]
 )
 class ProductListView(generics.ListAPIView):
     """
@@ -73,7 +82,16 @@ class ProductListView(generics.ListAPIView):
 @extend_schema(
     tags=["Products"],
     summary="Get product details",
-    description="Retrieve detailed information about a specific product"
+    description="Retrieve detailed information about a specific product. Use 'country' query parameter or 'X-Country' header to get prices in local currency (UZS for Uzbekistan, USD otherwise).",
+    parameters=[
+        OpenApiParameter(
+            name='country',
+            description='Country code or name (e.g., "Uzbekistan", "uz") to get prices in local currency',
+            required=False,
+            type=str,
+            location=OpenApiParameter.QUERY
+        ),
+    ]
 )
 class ProductDetailView(generics.RetrieveAPIView):
     """

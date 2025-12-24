@@ -141,8 +141,8 @@ class PaymentInitiateView(APIView):
 
         # Determine currency for OCTO:
         # - OCTO accepts ONLY UZS (CLS may not be available for all shops/test mode)
-        # - Always convert USD to UZS using exchange rate from database
-        # - For UZS: use as-is
+        # - If order currency is already UZS (from price_uzs), use as-is
+        # - Otherwise convert USD to UZS using exchange rate from database
         # Get USD to UZS exchange rate from database
         USD_TO_UZS_RATE = CurrencyRate.get_usd_rate()
         
@@ -152,7 +152,13 @@ class PaymentInitiateView(APIView):
         # Always use UZS for OCTO API (CLS support may vary by shop/test mode)
         octo_currency = "UZS"
         
-        if currency == "USD" or order.currency == "USD":
+        # If order currency is UZS, it means prices were already set using price_uzs
+        # No conversion needed - use amounts as-is
+        if order.currency == "UZS":
+            octo_total_sum = order.total_amount
+            logger.info(f"Order already in UZS (using price_uzs): {octo_total_sum} UZS - no conversion needed")
+            # Basket items already have correct prices in UZS from order.items.unit_price
+        elif currency == "USD" or order.currency == "USD":
             # Convert USD to UZS
             octo_total_sum = order.total_amount * USD_TO_UZS_RATE
             logger.info(f"Converting USD to UZS: {order.total_amount} USD -> {octo_total_sum} UZS (rate: {USD_TO_UZS_RATE})")

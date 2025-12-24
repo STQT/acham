@@ -24,6 +24,7 @@ class ProductAdmin(TranslationAdmin):
         'size',
         'color',
         'price',
+        'price_uzs',
         'is_available',
         'created_at'
     ]
@@ -45,7 +46,7 @@ class ProductAdmin(TranslationAdmin):
         'short_description'
     ]
     
-    list_editable = ['is_available', 'price']
+    list_editable = ['is_available', 'price', 'price_uzs']
     
     fieldsets = (
         ('Basic Information', {
@@ -56,7 +57,7 @@ class ProductAdmin(TranslationAdmin):
             'classes': ('collapse',)
         }),
         ('Pricing & Availability', {
-            'fields': ('price', 'is_available')
+            'fields': ('price', 'price_uzs', 'is_available')
         }),
     )
     

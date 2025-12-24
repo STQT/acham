@@ -159,7 +159,14 @@ class Product(models.Model):
         max_digits=10,
         decimal_places=2,
         verbose_name=_("Price"),
-        help_text=_("Product price")
+        help_text=_("Product price (USD)")
+    )
+    
+    price_uzs = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name=_("Price (UZS)"),
+        help_text=_("Product price in Uzbekistani Som (required for Uzbekistan)")
     )
     
     is_available = models.BooleanField(
