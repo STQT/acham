@@ -188,6 +188,47 @@ class OrderUpdateSerializer(serializers.Serializer):
                     address_type=OrderAddress.AddressType.SHIPPING,
                     defaults=shipping_address_data,
                 )
+                
+                # Recalculate currency based on updated shipping address
+                country = shipping_address_data.get("country", "").strip()
+                if country:
+                    country_lower = country.lower()
+                    is_uzbekistan = country_lower in [
+                        "uzbekistan", "узбекистан", "o'zbekiston", 
+                        "ozbekiston", "uzbek", "uz"
+                    ]
+                    
+                    # Update currency if country changed
+                    new_currency = "UZS" if is_uzbekistan else "USD"
+                    if instance.currency != new_currency:
+                        # Currency changed, need to recalculate order amounts
+                        instance.currency = new_currency
+                        
+                        # Recalculate order items and totals with new currency
+                        from decimal import Decimal
+                        subtotal = Decimal("0")
+                        total_items = 0
+                        
+                        # Recalculate items with new currency
+                        for order_item in instance.items.all():
+                            product = order_item.product
+                            if is_uzbekistan:
+                                unit_price = Decimal(product.price_uzs)
+                            else:
+                                unit_price = Decimal(product.price)
+                            
+                            line_total = unit_price * order_item.quantity
+                            order_item.unit_price = unit_price
+                            order_item.total_price = line_total
+                            order_item.save(update_fields=["unit_price", "total_price"])
+                            
+                            subtotal += line_total
+                            total_items += order_item.quantity
+                        
+                        # Recalculate order totals
+                        instance.subtotal_amount = subtotal
+                        instance.total_items = total_items
+                        instance.total_amount = subtotal - instance.discount_amount + instance.shipping_amount
 
             # Update billing address
             if billing_address_data:
