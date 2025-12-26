@@ -17,6 +17,16 @@ class User(AbstractUser):
     check forms.SignupForm and forms.SocialSignupForms accordingly.
     """
 
+    REGISTRATION_EMAIL = "email"
+    REGISTRATION_PHONE = "phone"
+    REGISTRATION_SOCIAL = "social"
+
+    REGISTRATION_METHOD_CHOICES = [
+        (REGISTRATION_EMAIL, _("Email")),
+        (REGISTRATION_PHONE, _("Phone OTP")),
+        (REGISTRATION_SOCIAL, _("Social Network")),
+    ]
+
     # First and last name do not cover name patterns around the globe
     name = models.CharField(_("Name of User"), blank=True, max_length=255)
     first_name = None  # type: ignore[assignment]
@@ -34,6 +44,13 @@ class User(AbstractUser):
         validators=[phone_validator],
     )
     username = None  # type: ignore[assignment]
+    registration_method = models.CharField(
+        _("Registration method"),
+        max_length=20,
+        choices=REGISTRATION_METHOD_CHOICES,
+        default=REGISTRATION_EMAIL,
+        help_text=_("Method used for user registration"),
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

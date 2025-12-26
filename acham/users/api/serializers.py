@@ -60,8 +60,13 @@ def ensure_user_exists_for_phone(phone: str) -> User:
         return user
 
     normalized = normalize_phone(phone)
-    password = get_random_string(20)
-    return User.objects.create_user(phone=normalized, email=None, password=password)
+    # Create user without password - they will login via OTP
+    return User.objects.create_user(
+        phone=normalized, 
+        email=None, 
+        password=None,
+        registration_method=User.REGISTRATION_PHONE
+    )
 
 
 class UserSerializer(serializers.ModelSerializer[User]):
@@ -69,8 +74,8 @@ class UserSerializer(serializers.ModelSerializer[User]):
 
     class Meta:
         model = User
-        fields = ["id", "email", "phone", "name", "is_active"]
-        read_only_fields = ["id", "is_active"]
+        fields = ["id", "email", "phone", "name", "is_active", "registration_method"]
+        read_only_fields = ["id", "is_active", "registration_method"]
 
     def get_phone(self, obj: User) -> str | None:
         phone_value = getattr(obj, "phone", None)
