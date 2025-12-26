@@ -154,6 +154,15 @@ class PasswordChangeSerializer(serializers.Serializer):
         return user
 
 
+class AccountDeleteSerializer(serializers.Serializer):
+    def save(self, **kwargs) -> User:
+        user = self.context["request"].user
+        # Soft delete - деактивация аккаунта
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        return user
+
+
 class EmailRegistrationSerializer(serializers.ModelSerializer[User]):
     password = serializers.CharField(write_only=True, min_length=8, trim_whitespace=False)
     phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
