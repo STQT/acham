@@ -165,10 +165,24 @@ class ReturnRequest(models.Model):
 class EmailSubscription(models.Model):
     """Model for storing email newsletter subscriptions."""
     
+    LANGUAGE_CHOICES = [
+        ('ru', _('Russian')),
+        ('en', _('English')),
+        ('uz', _('Uzbek')),
+    ]
+    
     email = models.EmailField(
         unique=True,
         verbose_name=_("Email"),
         help_text=_("Email address for newsletter subscription")
+    )
+    
+    language = models.CharField(
+        max_length=2,
+        choices=LANGUAGE_CHOICES,
+        default='ru',
+        verbose_name=_("Language"),
+        help_text=_("Preferred language for emails")
     )
     
     is_active = models.BooleanField(
@@ -186,4 +200,4 @@ class EmailSubscription(models.Model):
         verbose_name_plural = _("Email Subscriptions")
     
     def __str__(self):
-        return f"Subscription: {self.email} - {self.created_at.strftime('%Y-%m-%d')}"
+        return f"Subscription: {self.email} ({self.language}) - {self.created_at.strftime('%Y-%m-%d')}"
