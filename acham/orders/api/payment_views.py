@@ -912,18 +912,28 @@ def payment_notify(request):
             else:
                 logger.warning(f"Order {order.public_id} status is {old_order_status}, not updating to PAYMENT_CONFIRMED")
 
-        elif payment_status in ["failed", "cancelled"] or (error_code and error_code != 0):
-            logger.info("Processing FAILED status")
-            payment_transaction.status = PaymentTransaction.Status.FAILED
+        elif payment_status in ["failed", "cancelled", "canceled"] or (error_code and error_code != 0):
+            # Determine if it's canceled or failed
+            is_canceled = payment_status in ["cancelled", "canceled"]
+            
+            if is_canceled:
+                logger.info("Processing CANCELLED status")
+                payment_transaction.status = PaymentTransaction.Status.CANCELLED
+                cancel_reason = payload.get("cancel_reason") or _("Payment canceled")
+                payment_transaction.error_message = cancel_reason
+            else:
+                logger.info("Processing FAILED status")
+                payment_transaction.status = PaymentTransaction.Status.FAILED
+                payment_transaction.error_message = error_message or _("Payment failed")
+            
             payment_transaction.error_code = str(error_code) if error_code else None
-            payment_transaction.error_message = error_message or _("Payment failed")
             payment_transaction.completed_at = timezone.now()
 
-            logger.info(f"Payment transaction marked as FAILED:")
+            logger.info(f"Payment transaction marked as {payment_transaction.status}:")
             logger.info(f"  - Error code: {error_code}")
             logger.info(f"  - Error message: {payment_transaction.error_message}")
 
-            # Update order status
+            # Update order status (both canceled and failed payments mean order payment failed)
             order = payment_transaction.order
             old_order_status = order.status
             logger.info(f"Order status update: {old_order_status} -> PAYMENT_FAILED")
@@ -932,11 +942,12 @@ def payment_notify(request):
                 order.status = OrderStatus.PAYMENT_FAILED
                 order.save(update_fields=["status", "updated_at"])
 
+                note = _("Payment canceled via OCTO") if is_canceled else _("Payment failed via OCTO")
                 OrderStatusHistory.objects.create(
                     order=order,
                     from_status=OrderStatus.PENDING_PAYMENT,
                     to_status=OrderStatus.PAYMENT_FAILED,
-                    note=_("Payment failed via OCTO"),
+                    note=note,
                     metadata={"payment_transaction_id": payment_transaction.id},
                 )
 
