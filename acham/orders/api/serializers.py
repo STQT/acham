@@ -393,6 +393,4 @@ class OrderCreateSerializer(serializers.Serializer):
                 note=_("Order created"),
             )
 
-            cart.items.all().delete()
-
         return order
