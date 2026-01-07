@@ -541,7 +541,7 @@ class UserFavoriteListCreateView(generics.ListCreateAPIView):
     serializer_class = UserFavoriteSerializer
     
     def get_queryset(self):
-        return UserFavorite.objects.filter(user=self.request.user)
+        return UserFavorite.objects.filter(user=self.request.user).order_by('-created_at').order_by('-created_at')
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -559,7 +559,7 @@ class UserFavoriteDestroyView(generics.DestroyAPIView):
     serializer_class = UserFavoriteSerializer
     
     def get_queryset(self):
-        return UserFavorite.objects.filter(user=self.request.user)
+        return UserFavorite.objects.filter(user=self.request.user).order_by('-created_at')
 
 
 @extend_schema(
@@ -593,6 +593,10 @@ def toggle_favorite(request, product_id):
         if created:
             return Response({'message': 'Product added to favorites'}, status=status.HTTP_201_CREATED)
         else:
+            # Обновляем created_at, чтобы товар переместился в начало списка
+            from django.utils import timezone
+            favorite.created_at = timezone.now()
+            favorite.save(update_fields=['created_at'])
             return Response({'message': 'Product already in favorites'}, status=status.HTTP_200_OK)
     
     elif request.method == 'DELETE':
@@ -650,7 +654,7 @@ def user_favorites(request):
     """
     Get current user's favorite products.
     """
-    favorites = UserFavorite.objects.filter(user=request.user)
+    favorites = UserFavorite.objects.filter(user=request.user).order_by('-created_at')
     serializer = UserFavoriteSerializer(favorites, many=True, context={'request': request})
     return Response(serializer.data)
 
