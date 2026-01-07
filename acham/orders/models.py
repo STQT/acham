@@ -273,6 +273,50 @@ class CurrencyRate(models.Model):
         return rate
 
 
+class DeliveryFee(models.Model):
+    """Model for fixed delivery fee configuration."""
+    
+    currency = models.CharField(
+        max_length=3,
+        choices=[("USD", "USD"), ("UZS", "UZS")],
+        default="USD",
+        unique=True,
+        verbose_name=_("Currency"),
+        help_text=_("Currency for which this delivery fee applies"),
+    )
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name=_("Delivery Fee Amount"),
+        help_text=_("Fixed delivery fee amount in the specified currency"),
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_("Is Active"),
+        help_text=_("Whether this delivery fee is currently active"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = _("Delivery Fee")
+        verbose_name_plural = _("Delivery Fees")
+        ordering = ["currency"]
+    
+    def __str__(self):
+        return f"Delivery Fee: {self.amount} {self.currency}"
+    
+    @classmethod
+    def get_fee_for_currency(cls, currency: str) -> Decimal:
+        """Get active delivery fee for a currency."""
+        try:
+            fee = cls.objects.get(currency=currency.upper(), is_active=True)
+            return Decimal(str(fee.amount))
+        except cls.DoesNotExist:
+            # Return 0 if no fee configured
+            return Decimal("0")
+
+
 class PaymentTransaction(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "В ожидании"

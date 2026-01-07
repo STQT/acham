@@ -8,6 +8,7 @@ from .models import (
     OrderStatusHistory,
     PaymentTransaction,
     CurrencyRate,
+    DeliveryFee,
 )
 
 
@@ -167,3 +168,27 @@ class CurrencyRateAdmin(admin.ModelAdmin):
     search_fields = ("code",)
     ordering = ("-date", "-code")
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(DeliveryFee)
+class DeliveryFeeAdmin(admin.ModelAdmin):
+    list_display = ("currency", "amount", "is_active", "created_at", "updated_at")
+    list_filter = ("currency", "is_active", "created_at")
+    search_fields = ("currency",)
+    ordering = ("currency",)
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (_("Configuration"), {
+            "fields": (
+                "currency",
+                "amount",
+                "is_active",
+            )
+        }),
+        (_("Timeline"), {
+            "fields": (
+                "created_at",
+                "updated_at",
+            )
+        }),
+    )

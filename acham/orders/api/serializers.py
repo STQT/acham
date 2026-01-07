@@ -204,6 +204,11 @@ class OrderUpdateSerializer(serializers.Serializer):
                         # Currency changed, need to recalculate order amounts
                         instance.currency = new_currency
                         
+                        # Get delivery fee for the new currency
+                        from acham.orders.models import DeliveryFee
+                        delivery_fee = DeliveryFee.get_fee_for_currency(new_currency)
+                        instance.shipping_amount = delivery_fee
+                        
                         # Recalculate order items and totals with new currency
                         from decimal import Decimal
                         subtotal = Decimal("0")
@@ -225,7 +230,7 @@ class OrderUpdateSerializer(serializers.Serializer):
                             subtotal += line_total
                             total_items += order_item.quantity
                         
-                        # Recalculate order totals
+                        # Recalculate order totals with new delivery fee
                         instance.subtotal_amount = subtotal
                         instance.total_items = total_items
                         instance.total_amount = subtotal - instance.discount_amount + instance.shipping_amount
@@ -272,6 +277,7 @@ class OrderCreateSerializer(serializers.Serializer):
         cart: Cart = validated_data.pop("cart")
         shipping_address_data = validated_data.pop("shipping_address", None)
         billing_address_data = validated_data.pop("billing_address", None)
+        # Если shipping_amount не передан, используем 0 (будет заменен на delivery_fee)
         shipping_amount = Decimal(validated_data.pop("shipping_amount", Decimal("0")))
         discount_amount = Decimal(validated_data.pop("discount_amount", Decimal("0")))
 
@@ -279,18 +285,6 @@ class OrderCreateSerializer(serializers.Serializer):
         total_items = 0
 
         with transaction.atomic():
-            order = Order.objects.create(
-                user=user,
-                payment_method=validated_data.get("payment_method", ""),
-                shipping_method=validated_data.get("shipping_method", ""),
-                shipping_amount=shipping_amount,
-                discount_amount=discount_amount,
-                customer_email=(validated_data.get("customer_email") or user.email or ""),
-                customer_phone=(validated_data.get("customer_phone") or getattr(user, "phone", "") or ""),
-                notes=validated_data.get("notes", ""),
-                status=OrderStatus.PENDING_PAYMENT,
-            )
-
             # Determine if shipping address is in Uzbekistan
             is_uzbekistan = False
             if shipping_address_data:
@@ -301,6 +295,30 @@ class OrderCreateSerializer(serializers.Serializer):
                         "uzbekistan", "узбекистан", "o'zbekiston", 
                         "ozbekiston", "uzbek", "uz"
                     ]
+            
+            # Set currency based on shipping country
+            order_currency = "UZS" if is_uzbekistan else "USD"
+            
+            # Get delivery fee for the order currency
+            from acham.orders.models import DeliveryFee
+            delivery_fee = DeliveryFee.get_fee_for_currency(order_currency)
+            
+            # Если shipping_amount не был передан явно, используем delivery_fee
+            if shipping_amount == Decimal("0"):
+                shipping_amount = delivery_fee
+            
+            order = Order.objects.create(
+                user=user,
+                payment_method=validated_data.get("payment_method", ""),
+                shipping_method=validated_data.get("shipping_method", ""),
+                shipping_amount=shipping_amount,
+                discount_amount=discount_amount,
+                customer_email=(validated_data.get("customer_email") or user.email or ""),
+                customer_phone=(validated_data.get("customer_phone") or getattr(user, "phone", "") or ""),
+                notes=validated_data.get("notes", ""),
+                status=OrderStatus.PENDING_PAYMENT,
+                currency=order_currency,
+            )
             
             items_queryset = cart.items.select_related("product").all()
             for item in items_queryset:
@@ -335,12 +353,6 @@ class OrderCreateSerializer(serializers.Serializer):
                     total_price=line_total,
                 )
 
-            # Set currency based on shipping country
-            if is_uzbekistan:
-                order.currency = "UZS"
-            else:
-                order.currency = "USD"
-            
             order.subtotal_amount = subtotal
             order.total_items = total_items
             order.total_amount = subtotal - discount_amount + shipping_amount
