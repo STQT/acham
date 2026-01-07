@@ -674,6 +674,11 @@ class CartDetailView(generics.RetrieveAPIView):
     
     def get_object(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
+        # Обновляем shipment_amount при получении корзины, если нужно
+        if created or cart.shipment_amount == 0:
+            # Определяем валюту на основе страны пользователя или используем USD по умолчанию
+            currency = "USD"  # По умолчанию USD, можно определить из настроек пользователя
+            cart.update_shipment_amount(currency)
         return cart
 
 
@@ -690,6 +695,11 @@ class CartSummaryView(generics.RetrieveAPIView):
     
     def get_object(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
+        # Обновляем shipment_amount при получении корзины, если нужно
+        if created or cart.shipment_amount == 0:
+            # Определяем валюту на основе страны пользователя или используем USD по умолчанию
+            currency = "USD"  # По умолчанию USD, можно определить из настроек пользователя
+            cart.update_shipment_amount(currency)
         return cart
 
 

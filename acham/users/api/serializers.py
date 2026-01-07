@@ -425,6 +425,8 @@ class EmailPhoneTokenObtainPairSerializer(TokenObtainPairSerializer):
     }
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        from rest_framework_simplejwt.tokens import RefreshToken
+        
         identifier = attrs.get("identifier", "").strip()
         password = attrs.get("password")
 
@@ -435,7 +437,7 @@ class EmailPhoneTokenObtainPairSerializer(TokenObtainPairSerializer):
         if user is None or not user.check_password(password) or not user.is_active:
             raise AuthenticationFailed(self.error_messages["no_active_account"])
 
-        refresh = self.get_token(user)
+        refresh = RefreshToken.for_user(user)
         data = {
             "refresh": str(refresh),
             "access": str(refresh.access_token),

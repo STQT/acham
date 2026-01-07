@@ -373,6 +373,7 @@ class CartSerializer(serializers.ModelSerializer):
     
     items = CartItemSerializer(many=True, read_only=True)
     total_items = serializers.ReadOnlyField()
+    subtotal_price = serializers.ReadOnlyField()
     total_price = serializers.ReadOnlyField()
     item_count = serializers.ReadOnlyField()
     
@@ -383,6 +384,8 @@ class CartSerializer(serializers.ModelSerializer):
             'user',
             'items',
             'total_items',
+            'subtotal_price',
+            'shipment_amount',
             'total_price',
             'item_count',
             'created_at',
@@ -395,6 +398,7 @@ class CartSummarySerializer(serializers.ModelSerializer):
     """Simplified cart serializer for quick overview."""
     
     total_items = serializers.ReadOnlyField()
+    subtotal_price = serializers.ReadOnlyField()
     total_price = serializers.ReadOnlyField()
     item_count = serializers.ReadOnlyField()
     
@@ -403,6 +407,8 @@ class CartSummarySerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'total_items',
+            'subtotal_price',
+            'shipment_amount',
             'total_price',
             'item_count',
             'updated_at'

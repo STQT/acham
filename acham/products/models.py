@@ -338,6 +338,14 @@ class Cart(models.Model):
         verbose_name=_("User")
     )
     
+    shipment_amount = models.DecimalField(
+        _("Shipment Amount"),
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text=_("Fixed shipping/delivery fee amount")
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -354,17 +362,35 @@ class Cart(models.Model):
         return self.items.aggregate(total=models.Sum('quantity'))['total'] or 0
     
     @property
-    def total_price(self):
-        """Calculate total price of all items in cart."""
-        total = 0
+    def subtotal_price(self):
+        """Calculate subtotal price of all items in cart (without shipment)."""
+        from decimal import Decimal
+        total = Decimal("0")
         for item in self.items.all():
-            total += item.product.price * item.quantity
+            total += Decimal(str(item.product.price)) * item.quantity
         return total
+    
+    @property
+    def total_price(self):
+        """Calculate total price of all items in cart including shipment."""
+        from decimal import Decimal
+        subtotal = self.subtotal_price
+        shipment = Decimal(str(self.shipment_amount))
+        return subtotal + shipment
     
     @property
     def item_count(self):
         """Get count of unique items in cart."""
         return self.items.count()
+    
+    def update_shipment_amount(self, currency: str = "USD") -> None:
+        """Update shipment amount based on currency from DeliveryFee model."""
+        from acham.orders.models import DeliveryFee
+        from decimal import Decimal
+        
+        delivery_fee = DeliveryFee.get_fee_for_currency(currency)
+        self.shipment_amount = delivery_fee
+        self.save(update_fields=['shipment_amount', 'updated_at'])
 
 
 class CartItem(models.Model):
