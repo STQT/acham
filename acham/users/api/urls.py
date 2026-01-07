@@ -11,6 +11,8 @@ from acham.users.api.auth_views import GoogleOAuthCallbackView
 from acham.users.api.auth_views import PhoneOTPLoginRequestView
 from acham.users.api.auth_views import PhoneOTPVerifyView
 from acham.users.api.auth_views import PasswordChangeView
+from acham.users.api.auth_views import PasswordResetRequestView
+from acham.users.api.auth_views import PasswordResetConfirmView
 
 urlpatterns = [
     path("auth/register/email/", EmailRegistrationView.as_view(), name="auth-register-email"),
@@ -24,5 +26,7 @@ urlpatterns = [
     path("auth/social/facebook/authorize/", FacebookOAuthAuthorizeView.as_view(), name="auth-facebook-authorize"),
     path("auth/social/facebook/callback/", FacebookOAuthCallbackView.as_view(), name="auth-facebook-callback"),
     path("auth/password/change/", PasswordChangeView.as_view(), name="auth-password-change"),
+    path("auth/password/reset/request/", PasswordResetRequestView.as_view(), name="auth-password-reset-request"),
+    path("auth/password/reset/confirm/", PasswordResetConfirmView.as_view(), name="auth-password-reset-confirm"),
 ]
 

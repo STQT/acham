@@ -1,84 +1,1286 @@
 # Translations for the ACHAM Collection project
 # Copyright (C) 2025 Kairat Sultan
 # Kairat Sultan <gayratbek.sultonov@icloud.com>, 2025.
-#
+# 
 msgid ""
 msgstr ""
 "Project-Id-Version: 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-01-07 19:13+0500\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "Confirmation code for registration on the Acham.uz website: {code}"
-msgstr "Код подтверждения для регистрации на сайте Аcham.uz: {code}"
+#: acham/banner/models.py:11
+msgid "Question"
+msgstr ""
 
-msgid "OTP code not found or expired."
-msgstr "Код подтверждения не найден или истек."
+#: acham/banner/models.py:12
+msgid "Question for this FAQ"
+msgstr ""
 
-msgid "OTP code expired."
-msgstr "Код подтверждения истек."
+#: acham/banner/models.py:16
+msgid "Answer"
+msgstr ""
 
-msgid "Invalid OTP code."
-msgstr "Неверный код подтверждения."
+#: acham/banner/models.py:17
+msgid "Answer for this FAQ"
+msgstr ""
 
-msgid "OTP sent to phone number."
+#: acham/banner/models.py:25
+msgid "FAQ"
+msgstr ""
+
+#: acham/banner/models.py:26
+msgid "FAQs"
+msgstr ""
+
+#: acham/banner/models.py:36
+msgid "Terms and Conditions"
+msgstr ""
+
+#: acham/banner/models.py:37
+msgid "Privacy Policy"
+msgstr ""
+
+#: acham/banner/models.py:38
+msgid "Acham History"
+msgstr ""
+
+#: acham/banner/models.py:39
+msgid "Work With Us"
+msgstr ""
+
+#: acham/banner/models.py:40
+msgid "Declaration of Conformity"
+msgstr ""
+
+#: acham/banner/models.py:41
+msgid "Returns"
+msgstr ""
+
+#: acham/banner/models.py:47
+msgid "Page Type"
+msgstr ""
+
+#: acham/banner/models.py:48
+msgid "Type of static page"
+msgstr ""
+
+#: acham/banner/models.py:53
+msgid "Title"
+msgstr ""
+
+#: acham/banner/models.py:54
+msgid "Page title"
+msgstr ""
+
+#: acham/banner/models.py:59 acham/products/models.py:19
+#: acham/products/models.py:202
+msgid "Image"
+msgstr ""
+
+#: acham/banner/models.py:60
+msgid "Page image (optional)"
+msgstr ""
+
+#: acham/banner/models.py:66
+msgid "Content"
+msgstr ""
+
+#: acham/banner/models.py:67
+msgid "Page content (HTML allowed)"
+msgstr ""
+
+#: acham/banner/models.py:75
+msgid "Static Page"
+msgstr ""
+
+#: acham/banner/models.py:76
+msgid "Static Pages"
+msgstr ""
+
+#: acham/banner/models.py:87
+msgid "First Name"
+msgstr ""
+
+#: acham/banner/models.py:88
+msgid "Contact's first name"
+msgstr ""
+
+#: acham/banner/models.py:93
+msgid "Last Name"
+msgstr ""
+
+#: acham/banner/models.py:94
+msgid "Contact's last name"
+msgstr ""
+
+#: acham/banner/models.py:98 acham/banner/models.py:176
+#: acham/products/models.py:286 acham/users/models.py:25
+msgid "Email"
+msgstr ""
+
+#: acham/banner/models.py:99
+msgid "Contact's email address"
+msgstr ""
+
+#: acham/banner/models.py:105
+msgid "Phone Number"
+msgstr ""
+
+#: acham/banner/models.py:106
+#, fuzzy
+#| msgid "OTP sent to phone number."
+msgid "Contact's phone number"
 msgstr "Код подтверждения отправлен на номер телефона."
 
-msgid "Password updated successfully."
-msgstr "Пароль успешно обновлен."
+#: acham/banner/models.py:112
+#: acham/templates/admin/users/send_bulk_email.html:36
+msgid "Subject"
+msgstr ""
 
-msgid "redirect_uri is required."
+#: acham/banner/models.py:113
+msgid "Message subject/title"
+msgstr ""
+
+#: acham/banner/models.py:117 acham/banner/models.py:149
+msgid "Message"
+msgstr ""
+
+#: acham/banner/models.py:118
+msgid "Contact's message"
+msgstr ""
+
+#: acham/banner/models.py:126
+msgid "Contact Message"
+msgstr ""
+
+#: acham/banner/models.py:127
+msgid "Contact Messages"
+msgstr ""
+
+#: acham/banner/models.py:138
+msgid "Order Number"
+msgstr ""
+
+#: acham/banner/models.py:139
+msgid "Order number for the return request"
+msgstr ""
+
+#: acham/banner/models.py:144
+msgid "Email or Phone Number"
+msgstr ""
+
+#: acham/banner/models.py:145
+#, fuzzy
+#| msgid "OTP sent to phone number."
+msgid "Contact email or phone number"
+msgstr "Код подтверждения отправлен на номер телефона."
+
+#: acham/banner/models.py:150
+msgid "Return request message/details"
+msgstr ""
+
+#: acham/banner/models.py:158
+msgid "Return Request"
+msgstr ""
+
+#: acham/banner/models.py:159
+msgid "Return Requests"
+msgstr ""
+
+#: acham/banner/models.py:169 config/settings/base.py:50
+msgid "Russian"
+msgstr ""
+
+#: acham/banner/models.py:170 config/settings/base.py:51
+msgid "English"
+msgstr ""
+
+#: acham/banner/models.py:171 config/settings/base.py:49
+msgid "Uzbek"
+msgstr ""
+
+#: acham/banner/models.py:177
+msgid "Email address for newsletter subscription"
+msgstr ""
+
+#: acham/banner/models.py:184
+msgid "Language"
+msgstr ""
+
+#: acham/banner/models.py:185
+msgid "Preferred language for emails"
+msgstr ""
+
+#: acham/banner/models.py:190 acham/products/models.py:34
+#: acham/products/models.py:451
+msgid "Active"
+msgstr ""
+
+#: acham/banner/models.py:191
+msgid "Whether this subscription is active"
+msgstr ""
+
+#: acham/banner/models.py:199
+msgid "Email Subscription"
+msgstr ""
+
+#: acham/banner/models.py:200
+msgid "Email Subscriptions"
+msgstr ""
+
+#: acham/orders/admin.py:34 acham/orders/admin.py:120
+msgid "Identification"
+msgstr ""
+
+#: acham/orders/admin.py:35
+msgid "Ownership"
+msgstr ""
+
+#: acham/orders/admin.py:36 acham/orders/admin.py:135
+msgid "Financial"
+msgstr ""
+
+#: acham/orders/admin.py:46
+msgid "Customer"
+msgstr ""
+
+#: acham/orders/admin.py:47
+msgid "Logistics"
+msgstr ""
+
+#: acham/orders/admin.py:55 acham/orders/admin.py:147 acham/orders/admin.py:188
+msgid "Timeline"
+msgstr ""
+
+#: acham/orders/admin.py:65
+msgid "External data"
+msgstr ""
+
+#: acham/orders/admin.py:128
+msgid "Status"
+msgstr ""
+
+#: acham/orders/admin.py:141
+msgid "Verification"
+msgstr ""
+
+#: acham/orders/admin.py:154
+msgid "Data"
+msgstr ""
+
+#: acham/orders/admin.py:181
+msgid "Configuration"
+msgstr ""
+
+#: acham/orders/api/payment_views.py:42 acham/orders/api/payment_views.py:451
+#: acham/orders/api/payment_views.py:688 acham/orders/api/payment_views.py:982
+#, fuzzy
+#| msgid "Cart not found"
+msgid "Order not found."
+msgstr "Корзина не найдена"
+
+#: acham/orders/api/payment_views.py:48
+msgid "Order is not in pending payment status."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:235
+msgid "Failed to extract transaction ID from payment URL."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:316
+msgid "Payment preparation failed."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:435
+msgid "Failed to initiate payment. Please try again."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:458
+#, fuzzy
+#| msgid "redirect_uri is required."
+msgid "transaction_id is required."
 msgstr "Требуется redirect_uri."
 
-msgid "OAuth client_id is not configured."
-msgstr "OAuth client_id не настроен."
+#: acham/orders/api/payment_views.py:469 acham/orders/api/payment_views.py:708
+msgid "Payment transaction not found."
+msgstr ""
 
-msgid "code, state, and redirect_uri are required."
+#: acham/orders/api/payment_views.py:482
+#, fuzzy
+#| msgid "code, state, and redirect_uri are required."
+msgid "card_number and expire are required."
 msgstr "Требуются code, state и redirect_uri."
 
-msgid "Invalid or expired state parameter."
-msgstr "Неверный или истекший параметр state."
+#: acham/orders/api/payment_views.py:501
+msgid "Payment failed."
+msgstr ""
 
-msgid "redirect_uri mismatch."
-msgstr "Несоответствие redirect_uri."
+#: acham/orders/api/payment_views.py:579
+msgid "Failed to get verification info."
+msgstr ""
 
-msgid "OAuth credentials are not configured."
-msgstr "OAuth учетные данные не настроены."
+#: acham/orders/api/payment_views.py:603
+msgid "Payment verification failed - no time left for OTP."
+msgstr ""
 
-msgid "Unable to determine user identifier from provider response."
-msgstr "Не удалось определить идентификатор пользователя из ответа провайдера."
+#: acham/orders/api/payment_views.py:608
+msgid "Payment verification failed - OTP timeout."
+msgstr ""
 
+#: acham/orders/api/payment_views.py:652 acham/orders/api/payment_views.py:660
+msgid "Payment is being processed."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:672
+msgid "Failed to confirm payment. Please try again."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:697
+msgid "transaction_id and sms_key are required."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:723
+msgid "OTP verification failed."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:743
+msgid "OTP verified. Payment is being processed."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:751
+msgid "Failed to verify OTP. Please try again."
+msgstr ""
+
+#: acham/orders/api/payment_views.py:898
+msgid "Payment confirmed via OCTO"
+msgstr ""
+
+#: acham/orders/api/payment_views.py:922
+msgid "Payment canceled"
+msgstr ""
+
+#: acham/orders/api/payment_views.py:927 acham/orders/models.py:17
+msgid "Payment failed"
+msgstr ""
+
+#: acham/orders/api/payment_views.py:945
+msgid "Payment canceled via OCTO"
+msgstr ""
+
+#: acham/orders/api/payment_views.py:945
+msgid "Payment failed via OCTO"
+msgstr ""
+
+#: acham/orders/api/payment_views.py:992
+msgid "No payment transaction found for this order."
+msgstr ""
+
+#: acham/orders/api/serializers.py:265
 msgid "Authentication required to place an order."
 msgstr "Требуется аутентификация для размещения заказа."
 
+#: acham/orders/api/serializers.py:269
 msgid "Cart is empty."
 msgstr "Корзина пуста."
 
+#: acham/orders/api/serializers.py:393
 msgid "Order created"
 msgstr "Заказ создан"
 
+#: acham/orders/apps.py:8 acham/orders/models.py:94
+msgid "Orders"
+msgstr ""
+
+#: acham/orders/models.py:15
+msgid "Draft"
+msgstr ""
+
+#: acham/orders/models.py:16
+msgid "Pending payment"
+msgstr ""
+
+#: acham/orders/models.py:18
+msgid "Payment confirmed"
+msgstr ""
+
+#: acham/orders/models.py:19
+msgid "Preparing order"
+msgstr ""
+
+#: acham/orders/models.py:20
+msgid "Ready for pickup"
+msgstr ""
+
+#: acham/orders/models.py:21
+msgid "Shipped"
+msgstr ""
+
+#: acham/orders/models.py:22
+msgid "Delivered"
+msgstr ""
+
+#: acham/orders/models.py:23
+msgid "Cancelled"
+msgstr ""
+
+#: acham/orders/models.py:24
+msgid "Return requested"
+msgstr ""
+
+#: acham/orders/models.py:25
+msgid "Returned"
+msgstr ""
+
+#: acham/orders/models.py:26
+msgid "Refunded"
+msgstr ""
+
+#: acham/orders/models.py:37
+msgid "Human readable order number (e.g. ACH-10001)."
+msgstr ""
+
+#: acham/orders/models.py:54
+msgid "Optional CRM-provided status label."
+msgstr ""
+
+#: acham/orders/models.py:72
+msgid "Identifier of the order in an external CRM or ERP."
+msgstr ""
+
+#: acham/orders/models.py:77
+msgid "Raw payload received from or sent to the CRM."
+msgstr ""
+
+#: acham/orders/models.py:93
+msgid "Order"
+msgstr ""
+
+#: acham/orders/models.py:132
+msgid "Billing"
+msgstr ""
+
+#: acham/orders/models.py:133
+msgid "Shipping"
+msgstr ""
+
+#: acham/orders/models.py:150
+#, fuzzy
+#| msgid "Order created"
+msgid "Order address"
+msgstr "Заказ создан"
+
+#: acham/orders/models.py:151
+#, fuzzy
+#| msgid "Order created"
+msgid "Order addresses"
+msgstr "Заказ создан"
+
+#: acham/orders/models.py:185
+#, fuzzy
+#| msgid "Order created"
+msgid "Order item"
+msgstr "Заказ создан"
+
+#: acham/orders/models.py:186
+#, fuzzy
+#| msgid "Order created"
+msgid "Order items"
+msgstr "Заказ создан"
+
+#: acham/orders/models.py:215 acham/orders/models.py:216
+msgid "Order status history"
+msgstr ""
+
+#: acham/orders/models.py:229
+msgid "Currency Code"
+msgstr ""
+
+#: acham/orders/models.py:230
+msgid "ISO 4217 currency code (e.g., USD, EUR, RUB)"
+msgstr ""
+
+#: acham/orders/models.py:235
+msgid "Rate"
+msgstr ""
+
+#: acham/orders/models.py:236
+msgid "Exchange rate: 1 foreign currency = X UZS"
+msgstr ""
+
+#: acham/orders/models.py:239
+msgid "Date"
+msgstr ""
+
+#: acham/orders/models.py:240
+msgid "Date when this rate was effective"
+msgstr ""
+
+#: acham/orders/models.py:247
+msgid "Currency Rate"
+msgstr ""
+
+#: acham/orders/models.py:248
+msgid "Currency Rates"
+msgstr ""
+
+#: acham/orders/models.py:284
+msgid "Currency"
+msgstr ""
+
+#: acham/orders/models.py:285
+msgid "Currency for which this delivery fee applies"
+msgstr ""
+
+#: acham/orders/models.py:290
+msgid "Delivery Fee Amount"
+msgstr ""
+
+#: acham/orders/models.py:291
+msgid "Fixed delivery fee amount in the specified currency"
+msgstr ""
+
+#: acham/orders/models.py:295
+msgid "Is Active"
+msgstr ""
+
+#: acham/orders/models.py:296
+msgid "Whether this delivery fee is currently active"
+msgstr ""
+
+#: acham/orders/models.py:302
+msgid "Delivery Fee"
+msgstr ""
+
+#: acham/orders/models.py:303
+msgid "Delivery Fees"
+msgstr ""
+
+#: acham/orders/models.py:352
+msgid "Payment transaction"
+msgstr ""
+
+#: acham/orders/models.py:353
+msgid "Payment transactions"
+msgstr ""
+
+#: acham/orders/tasks.py:63
+#, python-brace-format
+msgid "Order Confirmation - {order_number}"
+msgstr ""
+
+#: acham/orders/tasks.py:131
+#, python-brace-format
+msgid ""
+"Your order {order_number} has been confirmed. Total amount: {total_amount} "
+"{currency}. Thank you for your purchase!"
+msgstr ""
+
+#: acham/products/api/views/cart_views.py:110
+#: acham/products/api/views/cart_views.py:156
+#: acham/products/api/views/cart_views.py:189
 msgid "Product not found"
 msgstr "Товар не найден"
 
+#: acham/products/api/views/cart_views.py:113
 msgid "Product is not available"
 msgstr "Товар недоступен"
 
+#: acham/products/api/views/cart_views.py:117
 msgid "Quantity must be greater than zero"
 msgstr "Количество должно быть больше нуля"
 
+#: acham/products/api/views/cart_views.py:162
 msgid "Product removed from cart"
 msgstr "Товар удален из корзины"
 
+#: acham/products/api/views/cart_views.py:164
+#: acham/products/api/views/cart_views.py:207
+#: acham/products/api/views/cart_views.py:233
 msgid "Cart not found"
 msgstr "Корзина не найдена"
 
+#: acham/products/api/views/cart_views.py:166
+#: acham/products/api/views/cart_views.py:209
 msgid "Product not in cart"
 msgstr "Товар не в корзине"
 
+#: acham/products/api/views/cart_views.py:193
 msgid "Valid quantity is required"
 msgstr "Требуется валидное количество"
 
+#: acham/products/api/views/cart_views.py:231
 msgid "Cart cleared"
 msgstr "Корзина очищена"
 
+#: acham/products/models.py:13
+msgid "Collection Name"
+msgstr ""
+
+#: acham/products/models.py:14
+msgid "Name of the collection"
+msgstr ""
+
+#: acham/products/models.py:20
+msgid "Image of the collection"
+msgstr ""
+
+#: acham/products/models.py:28
+msgid "Slug"
+msgstr ""
+
+#: acham/products/models.py:29
+msgid "URL-friendly version of the name"
+msgstr ""
+
+#: acham/products/models.py:35
+msgid "Whether this collection is active"
+msgstr ""
+
+#: acham/products/models.py:40
+msgid "New Arrival"
+msgstr ""
+
+#: acham/products/models.py:41
+msgid "Whether this collection should appear in new arrivals page"
+msgstr ""
+
+#: acham/products/models.py:46
+msgid "Featured Banner"
+msgstr ""
+
+#: acham/products/models.py:47
+msgid "Mark this collection to appear as the main banner on the storefront"
+msgstr ""
+
+#: acham/products/models.py:55 acham/products/models.py:100
+msgid "Collection"
+msgstr ""
+
+#: acham/products/models.py:56
+msgid "Collections"
+msgstr ""
+
+#: acham/products/models.py:78
+msgid "Clothing"
+msgstr ""
+
+#: acham/products/models.py:79 acham/products/models.py:419
+msgid "Accessories"
+msgstr ""
+
+#: acham/products/models.py:80
+msgid "Shoes"
+msgstr ""
+
+#: acham/products/models.py:81
+msgid "Bags"
+msgstr ""
+
+#: acham/products/models.py:82
+msgid "Jewelry"
+msgstr ""
+
+#: acham/products/models.py:83 acham/products/models.py:288
+msgid "Other"
+msgstr ""
+
+#: acham/products/models.py:94
+msgid "Oversize"
+msgstr ""
+
+#: acham/products/models.py:101
+msgid "Collection this product belongs to"
+msgstr ""
+
+#: acham/products/models.py:108
+msgid "Product Name"
+msgstr ""
+
+#: acham/products/models.py:109
+msgid "The name of the product"
+msgstr ""
+
+#: acham/products/models.py:115
+msgid "Size"
+msgstr ""
+
+#: acham/products/models.py:116
+#, fuzzy
+#| msgid "Product is not available"
+msgid "Product size"
+msgstr "Товар недоступен"
+
+#: acham/products/models.py:121
+msgid "Material"
+msgstr ""
+
+#: acham/products/models.py:122
+msgid "Primary material of the product"
+msgstr ""
+
+#: acham/products/models.py:128
+msgid "Product Type"
+msgstr ""
+
+#: acham/products/models.py:129
+msgid "Category of the product"
+msgstr ""
+
+#: acham/products/models.py:134
+msgid "Color"
+msgstr ""
+
+#: acham/products/models.py:135
+msgid "Primary color of the product"
+msgstr ""
+
+#: acham/products/models.py:141
+msgid "Short Description"
+msgstr ""
+
+#: acham/products/models.py:142
+msgid "Brief description of the product"
+msgstr ""
+
+#: acham/products/models.py:147
+msgid "Detailed Description"
+msgstr ""
+
+#: acham/products/models.py:148
+msgid "Comprehensive description with features and benefits"
+msgstr ""
+
+#: acham/products/models.py:153
+msgid "Care Instructions"
+msgstr ""
+
+#: acham/products/models.py:154
+msgid "How to care for and maintain the product"
+msgstr ""
+
+#: acham/products/models.py:161
+msgid "Price"
+msgstr ""
+
+#: acham/products/models.py:162
+msgid "Product price (USD)"
+msgstr ""
+
+#: acham/products/models.py:168
+msgid "Price (UZS)"
+msgstr ""
+
+#: acham/products/models.py:169
+msgid "Product price in Uzbekistani Som (required for Uzbekistan)"
+msgstr ""
+
+#: acham/products/models.py:174
+msgid "Available"
+msgstr ""
+
+#: acham/products/models.py:175
+#, fuzzy
+#| msgid "Product is not available"
+msgid "Whether the product is currently available"
+msgstr "Товар недоступен"
+
+#: acham/products/models.py:183 acham/products/models.py:197
+#: acham/products/models.py:262 acham/products/models.py:294
+#: acham/products/models.py:384
+msgid "Product"
+msgstr ""
+
+#: acham/products/models.py:184
+msgid "Products"
+msgstr ""
+
+#: acham/products/models.py:203
+#, fuzzy
+#| msgid "Product not in cart"
+msgid "Product image"
+msgstr "Товар не в корзине"
+
+#: acham/products/models.py:208
+msgid "Alt Text"
+msgstr ""
+
+#: acham/products/models.py:209
+msgid "Alternative text for accessibility"
+msgstr ""
+
+#: acham/products/models.py:215
+msgid "Primary Image"
+msgstr ""
+
+#: acham/products/models.py:216
+msgid "Whether this is the main product image"
+msgstr ""
+
+#: acham/products/models.py:221
+msgid "Display Order"
+msgstr ""
+
+#: acham/products/models.py:222
+msgid "Order in which images should be displayed"
+msgstr ""
+
+#: acham/products/models.py:229
+#, fuzzy
+#| msgid "Product not found"
+msgid "Product Shot"
+msgstr "Товар не найден"
+
+#: acham/products/models.py:230
+#, fuzzy
+#| msgid "Product not found"
+msgid "Product Shots"
+msgstr "Товар не найден"
+
+#: acham/products/models.py:255 acham/products/models.py:303
+#: acham/products/models.py:338
+msgid "User"
+msgstr ""
+
+#: acham/products/models.py:270
+msgid "User Favorite"
+msgstr ""
+
+#: acham/products/models.py:271
+msgid "User Favorites"
+msgstr ""
+
+#: acham/products/models.py:281
+msgid "Facebook"
+msgstr ""
+
+#: acham/products/models.py:282
+msgid "Twitter"
+msgstr ""
+
+#: acham/products/models.py:283
+msgid "Instagram"
+msgstr ""
+
+#: acham/products/models.py:284
+msgid "WhatsApp"
+msgstr ""
+
+#: acham/products/models.py:285
+msgid "Telegram"
+msgstr ""
+
+#: acham/products/models.py:287
+msgid "Copy Link"
+msgstr ""
+
+#: acham/products/models.py:309
+msgid "Platform"
+msgstr ""
+
+#: acham/products/models.py:310
+msgid "Platform where the product was shared"
+msgstr ""
+
+#: acham/products/models.py:318
+msgid "Successful"
+msgstr ""
+
+#: acham/products/models.py:319
+msgid "Whether the share was successful"
+msgstr ""
+
+#: acham/products/models.py:324
+#, fuzzy
+#| msgid "Product not in cart"
+msgid "Product Share"
+msgstr "Товар не в корзине"
+
+#: acham/products/models.py:325
+#, fuzzy
+#| msgid "Product not in cart"
+msgid "Product Shares"
+msgstr "Товар не в корзине"
+
+#: acham/products/models.py:345 acham/products/models.py:377
+msgid "Cart"
+msgstr ""
+
+#: acham/products/models.py:346
+msgid "Carts"
+msgstr ""
+
+#: acham/products/models.py:389
+msgid "Quantity"
+msgstr ""
+
+#: acham/products/models.py:390
+msgid "Number of this product in cart"
+msgstr ""
+
+#: acham/products/models.py:399
+#, fuzzy
+#| msgid "Cart is empty."
+msgid "Cart Item"
+msgstr "Корзина пуста."
+
+#: acham/products/models.py:400
+msgid "Cart Items"
+msgstr ""
+
+#: acham/products/models.py:415
+msgid "Complete the Look"
+msgstr ""
+
+#: acham/products/models.py:416
+msgid "You May Also Like"
+msgstr ""
+
+#: acham/products/models.py:417
+msgid "Frequently Bought Together"
+msgstr ""
+
+#: acham/products/models.py:418
+msgid "Similar Products"
+msgstr ""
+
+#: acham/products/models.py:420
+msgid "Outfit Complete"
+msgstr ""
+
+#: acham/products/models.py:426
+msgid "Source Product"
+msgstr ""
+
+#: acham/products/models.py:433
+msgid "Target Product"
+msgstr ""
+
+#: acham/products/models.py:439
+msgid "Relation Type"
+msgstr ""
+
+#: acham/products/models.py:440
+msgid "Type of relationship between products"
+msgstr ""
+
+#: acham/products/models.py:445
+msgid "Priority"
+msgstr ""
+
+#: acham/products/models.py:446
+msgid "Higher numbers appear first (0 = lowest priority)"
+msgstr ""
+
+#: acham/products/models.py:452
+msgid "Whether this relationship is active"
+msgstr ""
+
+#: acham/products/models.py:461
+#, fuzzy
+#| msgid "Product not found"
+msgid "Product Relation"
+msgstr "Товар не найден"
+
+#: acham/products/models.py:462
+#, fuzzy
+#| msgid "Product not found"
+msgid "Product Relations"
+msgstr "Товар не найден"
+
+#: acham/templates/admin/users/send_bulk_email.html:4
+msgid "Django site admin"
+msgstr ""
+
+#: acham/templates/admin/users/send_bulk_email.html:8
+msgid "Home"
+msgstr ""
+
+#: acham/templates/admin/users/send_bulk_email.html:19
+#, python-format
+msgid "Sending email to %(counter)s selected user."
+msgid_plural "Sending email to %(counter)s selected users."
+msgstr[0] ""
+msgstr[1] ""
+
+#: acham/templates/admin/users/send_bulk_email.html:21
+msgid "Sending email to all users with email addresses."
+msgstr ""
+
+#: acham/templates/admin/users/send_bulk_email.html:43
+msgid "Message (Plain Text)"
+msgstr ""
+
+#: acham/templates/admin/users/send_bulk_email.html:45
+msgid "Plain text version of the email."
+msgstr ""
+
+#: acham/templates/admin/users/send_bulk_email.html:51
+msgid "HTML Message (Optional)"
+msgstr ""
+
+#: acham/templates/admin/users/send_bulk_email.html:53
+msgid ""
+"HTML version of the email. If provided, recipients will receive the HTML "
+"version."
+msgstr ""
+
+#: acham/templates/admin/users/send_bulk_email.html:59
+msgid "Send Emails"
+msgstr ""
+
+#: acham/templates/admin/users/send_bulk_email.html:60
+msgid "Cancel"
+msgstr ""
+
+#: acham/templates/allauth/layouts/entrance.html:8 acham/templates/base.html:98
+msgid "Sign In"
+msgstr ""
+
+#: acham/templates/base.html:83
+msgid "My Profile"
+msgstr ""
+
+#: acham/templates/base.html:87
+msgid "Sign Out"
+msgstr ""
+
+#: acham/templates/base.html:93
+msgid "Sign Up"
+msgstr ""
+
+#: acham/users/admin.py:30
+msgid "Personal info"
+msgstr ""
+
+#: acham/users/admin.py:32
+msgid "Permissions"
+msgstr ""
+
+#: acham/users/admin.py:43
+msgid "Important dates"
+msgstr ""
+
+#: acham/users/admin.py:82
+#, fuzzy
+#| msgid "code, state, and redirect_uri are required."
+msgid "Subject and message are required."
+msgstr "Требуются code, state и redirect_uri."
+
+#: acham/users/admin.py:104
+#, python-brace-format
+msgid ""
+"Bulk email task queued successfully. Emails will be sent to {count} users. "
+"Task ID: {task_id}"
+msgstr ""
+
+#: acham/users/admin.py:116
+msgid "Send Bulk Email"
+msgstr ""
+
+#: acham/users/admin.py:137
+msgid "Send bulk email to selected users"
+msgstr ""
+
+#: acham/users/api/auth_views.py:66
+msgid "OTP sent to phone number."
+msgstr "Код подтверждения отправлен на номер телефона."
+
+#: acham/users/api/auth_views.py:96
+msgid "Password updated successfully."
+msgstr "Пароль успешно обновлен."
+
+#: acham/users/api/auth_views.py:192
+msgid "redirect_uri is required."
+msgstr "Требуется redirect_uri."
+
+#: acham/users/api/auth_views.py:196
+msgid "OAuth client_id is not configured."
+msgstr "OAuth client_id не настроен."
+
+#: acham/users/api/auth_views.py:211
+msgid "code, state, and redirect_uri are required."
+msgstr "Требуются code, state и redirect_uri."
+
+#: acham/users/api/auth_views.py:215
+msgid "Invalid or expired state parameter."
+msgstr "Неверный или истекший параметр state."
+
+#: acham/users/api/auth_views.py:218
+msgid "redirect_uri mismatch."
+msgstr "Несоответствие redirect_uri."
+
+#: acham/users/api/auth_views.py:222
+msgid "OAuth credentials are not configured."
+msgstr "OAuth учетные данные не настроены."
+
+#: acham/users/api/auth_views.py:237
+msgid "Unable to determine user identifier from provider response."
+msgstr "Не удалось определить идентификатор пользователя из ответа провайдера."
+
+#: acham/users/api/serializers.py:109 acham/users/api/serializers.py:180
+msgid "User with this email already exists."
+msgstr ""
+
+#: acham/users/api/serializers.py:121 acham/users/api/serializers.py:189
+#: acham/users/api/serializers.py:212
+msgid "A user with this phone number already exists."
+msgstr ""
+
+#: acham/users/api/serializers.py:137
+msgid "Current password is incorrect."
+msgstr ""
+
+#: acham/users/api/serializers.py:177
+#, fuzzy
+#| msgid "redirect_uri is required."
+msgid "Email is required."
+msgstr "Требуется redirect_uri."
+
+#: acham/users/api/serializers.py:211
+#, fuzzy
+#| msgid "Invalid OTP code."
+msgid "Invalid or expired OTP code."
+msgstr "Неверный код подтверждения."
+
+#: acham/users/api/serializers.py:251
+msgid "User with this phone number does not exist."
+msgstr ""
+
+#: acham/users/api/serializers.py:252
+msgid "User account is disabled."
+msgstr ""
+
+#: acham/users/api/serializers.py:253
+#, fuzzy
+#| msgid "redirect_uri is required."
+msgid "reCAPTCHA verification is required."
+msgstr "Требуется redirect_uri."
+
+#: acham/users/api/serializers.py:327
+msgid "No active account found with the given credentials."
+msgstr ""
+
+#: acham/users/api/views.py:55
+msgid "Your account has been successfully deleted."
+msgstr ""
+
+#: acham/users/apps.py:9
+msgid "Users"
+msgstr ""
+
+#: acham/users/forms.py:27 acham/users/tests/test_forms.py:35
+msgid "This email has already been taken."
+msgstr ""
+
+#: acham/users/models.py:26 acham/users/models.py:113
+msgid "Phone OTP"
+msgstr ""
+
+#: acham/users/models.py:27
+msgid "Social Network"
+msgstr ""
+
+#: acham/users/models.py:31
+msgid "Name of User"
+msgstr ""
+
+#: acham/users/models.py:34
+msgid "email address"
+msgstr ""
+
+#: acham/users/models.py:37
+msgid "Enter a valid international phone number starting with country code."
+msgstr ""
+
+#: acham/users/models.py:40 acham/users/models.py:99
+#, fuzzy
+#| msgid "OTP sent to phone number."
+msgid "phone number"
+msgstr "Код подтверждения отправлен на номер телефона."
+
+#: acham/users/models.py:48
+msgid "Registration method"
+msgstr ""
+
+#: acham/users/models.py:52
+msgid "Method used for user registration"
+msgstr ""
+
+#: acham/users/models.py:95
+msgid "Registration"
+msgstr ""
+
+#: acham/users/models.py:96
+msgid "Login"
+msgstr ""
+
+#: acham/users/models.py:100
+msgid "Purpose"
+msgstr ""
+
+#: acham/users/models.py:101
+msgid "OTP hash"
+msgstr ""
+
+#: acham/users/models.py:102
+msgid "Expires at"
+msgstr ""
+
+#: acham/users/models.py:103
+msgid "Created at"
+msgstr ""
+
+#: acham/users/models.py:104
+msgid "Verified at"
+msgstr ""
+
+#: acham/users/models.py:105
+msgid "Attempts"
+msgstr ""
+
+#: acham/users/models.py:106
+msgid "Is active"
+msgstr ""
+
+#: acham/users/models.py:114
+msgid "Phone OTPs"
+msgstr ""
+
+#: acham/users/services/otp.py:58
+#, python-brace-format
+msgid "Confirmation code for registration on the Acham.uz website: {code}"
+msgstr "Код подтверждения для регистрации на сайте Аcham.uz: {code}"
+
+#: acham/users/services/otp.py:81
+msgid "OTP code not found or expired."
+msgstr "Код подтверждения не найден или истек."
+
+#: acham/users/services/otp.py:86
+msgid "OTP code expired."
+msgstr "Код подтверждения истек."
+
+#: acham/users/services/otp.py:93
+msgid "Invalid OTP code."
+msgstr "Неверный код подтверждения."
+
+#: acham/users/services/recaptcha.py:40
+#, fuzzy
+#| msgid "redirect_uri is required."
+msgid "reCAPTCHA token is required."
+msgstr "Требуется redirect_uri."
+
+#: acham/users/services/recaptcha.py:59 acham/users/services/recaptcha.py:67
+msgid "reCAPTCHA verification failed. Please try again."
+msgstr ""
+
+#: acham/users/services/recaptcha.py:73
+msgid "Error verifying reCAPTCHA. Please try again later."
+msgstr ""
+
+#: acham/users/tests/test_views.py:72 acham/users/views.py:25
+msgid "Information successfully updated"
+msgstr ""

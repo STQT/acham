@@ -115,3 +115,41 @@ class PhoneOTP(models.Model):
 
     def __str__(self) -> str:
         return f"{self.phone} ({self.purpose})"
+
+
+class PasswordResetToken(models.Model):
+    """Stores password reset tokens for email-based password recovery."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+        verbose_name=_("User")
+    )
+    token = models.CharField(_("Token"), max_length=64, unique=True, db_index=True)
+    expires_at = models.DateTimeField(_("Expires at"), db_index=True)
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    used_at = models.DateTimeField(_("Used at"), blank=True, null=True)
+    is_active = models.BooleanField(_("Is active"), default=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["token", "is_active"]),
+            models.Index(fields=["expires_at"]),
+            models.Index(fields=["user", "is_active"]),
+        ]
+        verbose_name = _("Password Reset Token")
+        verbose_name_plural = _("Password Reset Tokens")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Password reset token for {self.user.email or self.user.phone}"
+
+    def is_expired(self) -> bool:
+        """Check if token is expired."""
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+    def is_valid(self) -> bool:
+        """Check if token is valid (not used, not expired, and active)."""
+        return self.is_active and not self.used_at and not self.is_expired()

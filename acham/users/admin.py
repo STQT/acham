@@ -11,7 +11,7 @@ from django.utils.decorators import method_decorator
 
 from .forms import UserAdminChangeForm
 from .forms import UserAdminCreationForm
-from .models import User
+from .models import User, PasswordResetToken
 from .tasks import send_bulk_email
 
 if settings.DJANGO_ADMIN_FORCE_ALLAUTH:
@@ -135,3 +135,27 @@ class UserAdmin(auth_admin.UserAdmin):
         return HttpResponseRedirect(url)
 
     send_bulk_email_action.short_description = _("Send bulk email to selected users")
+
+
+@admin.register(PasswordResetToken)
+class PasswordResetTokenAdmin(admin.ModelAdmin):
+    """Admin configuration for PasswordResetToken model."""
+    
+    list_display = ("user", "token", "is_active", "expires_at", "created_at", "used_at")
+    list_filter = ("is_active", "created_at", "expires_at", "used_at")
+    search_fields = ("user__email", "user__phone", "token")
+    readonly_fields = ("token", "created_at", "used_at")
+    ordering = ("-created_at",)
+    
+    fieldsets = (
+        (_("Token Information"), {
+            "fields": ("user", "token", "is_active")
+        }),
+        (_("Timeline"), {
+            "fields": ("created_at", "expires_at", "used_at")
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        """Disable manual creation of tokens."""
+        return False

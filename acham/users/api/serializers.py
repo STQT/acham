@@ -118,7 +118,7 @@ class UserUpdateSerializer(serializers.ModelSerializer[User]):
         if self.instance and self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
-            raise serializers.ValidationError(_("User with this phone already exists."))
+            raise serializers.ValidationError(_("A user with this phone number already exists."))
         return normalized
 
     def update(self, instance: User, validated_data: dict[str, Any]) -> User:
@@ -186,7 +186,7 @@ class EmailRegistrationSerializer(serializers.ModelSerializer[User]):
         normalized = normalize_phone(value)
         User.phone_validator(normalized)
         if User.objects.filter(phone=normalized).exists():
-            raise serializers.ValidationError(_("User with this phone already exists."))
+            raise serializers.ValidationError(_("A user with this phone number already exists."))
         return normalized
 
     def validate_password(self, value: str) -> str:
@@ -209,7 +209,7 @@ class PhoneRegistrationConfirmSerializer(serializers.Serializer[dict[str, Any]])
 
     default_error_messages = {
         "invalid_code": _("Invalid or expired OTP code."),
-        "user_exists": _("User with this phone already exists."),
+        "user_exists": _("A user with this phone number already exists."),
     }
 
     def validate_phone(self, value: str) -> str:
@@ -313,6 +313,103 @@ class PhoneOTPVerifySerializer(serializers.Serializer[dict[str, str]]):
         user = ensure_user_exists_for_phone(otp.phone)
         attrs["user"] = user
         return attrs
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for requesting password reset."""
+    
+    email = serializers.EmailField(required=True)
+    
+    default_error_messages = {
+        "user_not_found": _("User with this email address does not exist."),
+        "no_email": _("User account does not have an email address."),
+    }
+    
+    def validate_email(self, value: str) -> str:
+        """Validate that user exists and has email."""
+        email_lower = value.lower()
+        try:
+            user = User.objects.get(email__iexact=email_lower)
+            if not user.email:
+                self.fail("no_email")
+            return email_lower
+        except User.DoesNotExist:
+            # Don't reveal if user exists or not for security
+            # Return email anyway, but don't send reset link
+            return email_lower
+    
+    def save(self) -> dict[str, Any]:
+        """Trigger password reset email sending."""
+        from acham.users.tasks import send_password_reset_email
+        
+        email = self.validated_data["email"]
+        try:
+            user = User.objects.get(email__iexact=email)
+            if user.email:
+                # Send password reset email asynchronously
+                send_password_reset_email.delay(user.id)
+        except User.DoesNotExist:
+            # Silently fail for security (don't reveal if user exists)
+            pass
+        
+        # Always return success message for security
+        return {"message": _("If a user with this email exists, a password reset link has been sent.")}
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer for confirming password reset with token."""
+    
+    token = serializers.CharField(required=True, max_length=64)
+    new_password = serializers.CharField(write_only=True, min_length=8, trim_whitespace=False)
+    
+    default_error_messages = {
+        "invalid_token": _("Invalid or expired password reset token."),
+        "token_used": _("This password reset token has already been used."),
+    }
+    
+    def validate_token(self, value: str) -> str:
+        """Validate password reset token."""
+        from acham.users.models import PasswordResetToken
+        from django.utils import timezone
+        
+        try:
+            token_obj = PasswordResetToken.objects.get(token=value, is_active=True)
+            
+            if token_obj.used_at:
+                self.fail("token_used")
+            
+            if token_obj.is_expired():
+                self.fail("invalid_token")
+            
+            # Store token object in context for later use
+            self.context["token_obj"] = token_obj
+            return value
+        except PasswordResetToken.DoesNotExist:
+            self.fail("invalid_token")
+    
+    def validate_new_password(self, value: str) -> str:
+        """Validate new password."""
+        password_validation.validate_password(value, user=None)
+        return value
+    
+    def save(self) -> User:
+        """Reset user password."""
+        from django.utils import timezone
+        
+        token_obj = self.context["token_obj"]
+        user = token_obj.user
+        new_password = self.validated_data["new_password"]
+        
+        # Update password
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        
+        # Mark token as used
+        token_obj.used_at = timezone.now()
+        token_obj.is_active = False
+        token_obj.save(update_fields=["used_at", "is_active"])
+        
+        return user
 
 
 class EmailPhoneTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -25,6 +25,8 @@ from acham.users.api.serializers import PhoneOTPLoginRequestSerializer
 from acham.users.api.serializers import PhoneOTPVerifySerializer
 from acham.users.api.serializers import PhoneRegistrationConfirmSerializer
 from acham.users.api.serializers import PasswordChangeSerializer
+from acham.users.api.serializers import PasswordResetRequestSerializer
+from acham.users.api.serializers import PasswordResetConfirmSerializer
 from acham.users.api.serializers import UserSerializer
 
 
@@ -94,6 +96,31 @@ class PasswordChangeView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"detail": _("Password updated successfully.")}, status=status.HTTP_200_OK)
+
+
+class PasswordResetRequestView(APIView):
+    """Request password reset - sends email with reset link."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = serializer.save()
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class PasswordResetConfirmView(APIView):
+    """Confirm password reset with token."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(
+            {"detail": _("Password has been reset successfully.")},
+            status=status.HTTP_200_OK
+        )
 
 
 class SocialOAuthBaseView(AuthResponseMixin, APIView):
