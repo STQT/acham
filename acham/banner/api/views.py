@@ -6,6 +6,7 @@ from django.db import IntegrityError
 
 from ..models import FAQ, StaticPage, ContactMessage, ReturnRequest, EmailSubscription
 from .serializers import FAQSerializer, StaticPageSerializer, ContactMessageSerializer, ReturnRequestSerializer, EmailSubscriptionSerializer
+from ..tasks import send_subscription_confirmation_email
 
 
 @extend_schema(
@@ -86,6 +87,22 @@ class EmailSubscriptionCreateView(generics.CreateAPIView):
     serializer_class = EmailSubscriptionSerializer
     permission_classes = []  # Allow anonymous users to subscribe
     
+    def _get_request_language(self, request):
+        """Extract language from request headers or query params."""
+        # Try to get from Accept-Language header
+        accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+        
+        # Parse Accept-Language header (e.g., "ru-RU,ru;q=0.9,en-US;q=0.8")
+        if accept_language:
+            # Get first language code
+            lang_code = accept_language.split(',')[0].split('-')[0].split(';')[0].strip().lower()
+            # Validate against supported languages
+            if lang_code in ['ru', 'en', 'uz']:
+                return lang_code
+        
+        # Default to Russian
+        return 'ru'
+    
     def create(self, request, *args, **kwargs):
         """Handle subscription creation with duplicate email handling."""
         email = request.data.get('email')
@@ -96,6 +113,9 @@ class EmailSubscriptionCreateView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Get language from request
+        language = self._get_request_language(request)
+        
         # Check if email already exists
         existing_subscription = EmailSubscription.objects.filter(email=email).first()
         
@@ -103,16 +123,26 @@ class EmailSubscriptionCreateView(generics.CreateAPIView):
             # If exists but inactive, reactivate it
             if not existing_subscription.is_active:
                 existing_subscription.is_active = True
+                existing_subscription.language = language  # Update language
                 existing_subscription.save()
+                # Send confirmation email asynchronously
+                send_subscription_confirmation_email.delay(email, language)
                 serializer = self.get_serializer(existing_subscription)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             # If already active, return success with existing data
             serializer = self.get_serializer(existing_subscription)
             return Response(serializer.data, status=status.HTTP_200_OK)
         
-        # Create new subscription
+        # Create new subscription with language
+        serializer = self.get_serializer(data={'email': email, 'language': language})
+        serializer.is_valid(raise_exception=True)
+        
         try:
-            return super().create(request, *args, **kwargs)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            # Send confirmation email asynchronously for new subscription
+            send_subscription_confirmation_email.delay(email, language)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except IntegrityError:
             # Handle race condition where email was created between check and save
             existing_subscription = EmailSubscription.objects.get(email=email)

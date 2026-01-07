@@ -1,14 +1,14 @@
 from django.contrib import admin
+from modeltranslation.admin import TranslationAdmin
 from .models import FAQ, StaticPage, ContactMessage, ReturnRequest, EmailSubscription
-# Register your models here.
+
 
 @admin.register(FAQ)
-class FAQAdmin(admin.ModelAdmin):
-    """Admin configuration for FAQ model."""
+class FAQAdmin(TranslationAdmin):
+    """Admin configuration for FAQ model with translation support."""
 
     list_display = [
         'question',
-        'answer',
         'created_at'
     ]
 
@@ -16,10 +16,26 @@ class FAQAdmin(admin.ModelAdmin):
         'created_at'
     ]
 
+    search_fields = [
+        'question',
+        'answer'
+    ]
+
+    # TranslationAdmin automatically handles language tabs
+    class Media:
+        js = (
+            'http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
+            'http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js',
+            'modeltranslation/js/tabbed_translation_fields.js',
+        )
+        css = {
+            'screen': ('modeltranslation/css/tabbed_translation_fields.css',),
+        }
+
 
 @admin.register(StaticPage)
-class StaticPageAdmin(admin.ModelAdmin):
-    """Admin configuration for StaticPage model."""
+class StaticPageAdmin(TranslationAdmin):
+    """Admin configuration for StaticPage model with translation support."""
 
     list_display = [
         'page_type',
@@ -46,6 +62,17 @@ class StaticPageAdmin(admin.ModelAdmin):
     ]
 
     readonly_fields = []
+
+    # TranslationAdmin automatically handles language tabs
+    class Media:
+        js = (
+            'http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
+            'http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js',
+            'modeltranslation/js/tabbed_translation_fields.js',
+        )
+        css = {
+            'screen': ('modeltranslation/css/tabbed_translation_fields.css',),
+        }
 
 
 @admin.register(ContactMessage)
@@ -129,12 +156,14 @@ class EmailSubscriptionAdmin(admin.ModelAdmin):
 
     list_display = [
         'email',
+        'language',
         'is_active',
         'created_at',
         'updated_at'
     ]
 
     list_filter = [
+        'language',
         'is_active',
         'created_at'
     ]
@@ -145,6 +174,7 @@ class EmailSubscriptionAdmin(admin.ModelAdmin):
 
     fields = [
         'email',
+        'language',
         'is_active',
         'created_at',
         'updated_at'

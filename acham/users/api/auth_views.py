@@ -159,7 +159,12 @@ class SocialOAuthBaseView(AuthResponseMixin, APIView):
                 if email_lower:
                     user = User.objects.filter(email__iexact=email_lower).first()
                 if user is None:
-                    user = User.objects.create_user(email=email_lower, password=None, name=name or "")
+                    user = User.objects.create_user(
+                        email=email_lower, 
+                        password=None, 
+                        name=name or "",
+                        registration_method=User.REGISTRATION_SOCIAL
+                    )
                 else:
                     if name and not user.name:
                         user.name = name

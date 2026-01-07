@@ -87,6 +87,7 @@ class EmailSubscriptionSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'email',
+            'language',
             'is_active',
             'created_at',
             'updated_at'

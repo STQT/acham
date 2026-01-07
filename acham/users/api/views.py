@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
@@ -9,6 +10,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from acham.users.models import User
 
+from .serializers import AccountDeleteSerializer
 from .serializers import UserSerializer
 from .serializers import UserUpdateSerializer
 
@@ -36,3 +38,20 @@ class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericV
             serializer.save()
         data = UserSerializer(request.user, context={"request": request}).data
         return Response(status=status.HTTP_200_OK, data=data)
+
+    @action(detail=False, methods=["post"], url_path="delete-account")
+    def delete_account(self, request):
+        """
+        Soft delete user account (deactivate).
+        Simply POST to this endpoint to deactivate your account.
+        """
+        serializer = AccountDeleteSerializer(
+            data={},
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"detail": _("Your account has been successfully deleted.")},
+            status=status.HTTP_200_OK,
+        )
