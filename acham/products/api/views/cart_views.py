@@ -62,7 +62,7 @@ class CartItemListCreateView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
-        return CartItem.objects.filter(cart=cart)
+        return CartItem.objects.filter(cart=cart).order_by('-added_at')
     
     def perform_create(self, serializer):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -83,7 +83,7 @@ class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     
     def get_queryset(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
-        return CartItem.objects.filter(cart=cart)
+        return CartItem.objects.filter(cart=cart).order_by('-added_at')
 
 
 @extend_schema(
@@ -124,8 +124,11 @@ def add_to_cart(request, product_id):
     )
     
     if not created:
+        # Обновляем added_at, чтобы товар переместился в начало списка
+        from django.utils import timezone
+        cart_item.added_at = timezone.now()
         cart_item.quantity += quantity
-        cart_item.save()
+        cart_item.save(update_fields=['added_at', 'quantity'])
     
     serializer = CartItemSerializer(cart_item, context={'request': request})
     return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
@@ -192,8 +195,11 @@ def update_cart_item_quantity(request, product_id):
     try:
         cart = Cart.objects.get(user=request.user)
         cart_item = CartItem.objects.get(cart=cart, product=product)
+        # Обновляем added_at, чтобы товар переместился в начало списка
+        from django.utils import timezone
+        cart_item.added_at = timezone.now()
         cart_item.quantity = quantity
-        cart_item.save()
+        cart_item.save(update_fields=['added_at', 'quantity'])
         
         serializer = CartItemSerializer(cart_item, context={'request': request})
         return Response(serializer.data)
