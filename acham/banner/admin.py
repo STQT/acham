@@ -1,7 +1,7 @@
 from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
 from .models import FAQ, StaticPage, ContactMessage, ReturnRequest, EmailSubscription, AboutPageSection
-
+from django.utils.translation import gettext_lazy as _
 
 @admin.register(FAQ)
 class FAQAdmin(TranslationAdmin):
