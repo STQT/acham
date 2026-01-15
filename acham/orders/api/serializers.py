@@ -91,6 +91,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSummarySerializer(serializers.ModelSerializer):
     status_display = serializers.SerializerMethodField()
     preview_images = serializers.SerializerMethodField()
+    shipping_amount_usd = serializers.SerializerMethodField()
+    shipping_amount_uzs = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -108,6 +110,8 @@ class OrderSummarySerializer(serializers.ModelSerializer):
             "placed_at",
             "updated_at",
             "preview_images",
+            "shipping_amount_usd",
+            "shipping_amount_uzs",
         )
 
     def get_status_display(self, obj: Order) -> str:
@@ -122,6 +126,27 @@ class OrderSummarySerializer(serializers.ModelSerializer):
             if len(images) >= 4:
                 break
         return images
+    
+    def get_shipping_amount_usd(self, obj: Order) -> str:
+        """Get delivery fee in USD."""
+        from acham.orders.models import DeliveryFee
+        try:
+            fee_usd = DeliveryFee.objects.get(currency="USD", is_active=True)
+            return str(fee_usd.amount)
+        except DeliveryFee.DoesNotExist:
+            return "0"
+    
+    def get_shipping_amount_uzs(self, obj: Order) -> str:
+        """Get delivery fee in UZS."""
+        from acham.orders.models import DeliveryFee
+        try:
+            fee_uzs = DeliveryFee.objects.get(currency="UZS", is_active=True)
+            # Если есть amount_uzs, используем его, иначе amount
+            if fee_uzs.amount_uzs is not None:
+                return str(fee_uzs.amount_uzs)
+            return str(fee_uzs.amount)
+        except DeliveryFee.DoesNotExist:
+            return "0"
 
 
 class OrderDetailSerializer(OrderSummarySerializer):

@@ -376,6 +376,8 @@ class CartSerializer(serializers.ModelSerializer):
     subtotal_price = serializers.ReadOnlyField()
     total_price = serializers.ReadOnlyField()
     item_count = serializers.ReadOnlyField()
+    shipment_amount_usd = serializers.SerializerMethodField()
+    shipment_amount_uzs = serializers.SerializerMethodField()
     
     class Meta:
         model = Cart
@@ -386,12 +388,37 @@ class CartSerializer(serializers.ModelSerializer):
             'total_items',
             'subtotal_price',
             'shipment_amount',
+            'shipment_amount_usd',
+            'shipment_amount_uzs',
             'total_price',
             'item_count',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+    
+    def get_shipment_amount_usd(self, obj):
+        """Get delivery fee in USD."""
+        from acham.orders.models import DeliveryFee
+        from decimal import Decimal
+        try:
+            fee_usd = DeliveryFee.objects.get(currency="USD", is_active=True)
+            return str(fee_usd.amount)
+        except DeliveryFee.DoesNotExist:
+            return "0"
+    
+    def get_shipment_amount_uzs(self, obj):
+        """Get delivery fee in UZS."""
+        from acham.orders.models import DeliveryFee
+        from decimal import Decimal
+        try:
+            fee_uzs = DeliveryFee.objects.get(currency="UZS", is_active=True)
+            # Если есть amount_uzs, используем его, иначе amount
+            if fee_uzs.amount_uzs is not None:
+                return str(fee_uzs.amount_uzs)
+            return str(fee_uzs.amount)
+        except DeliveryFee.DoesNotExist:
+            return "0"
 
 
 class CartSummarySerializer(serializers.ModelSerializer):
@@ -401,6 +428,8 @@ class CartSummarySerializer(serializers.ModelSerializer):
     subtotal_price = serializers.ReadOnlyField()
     total_price = serializers.ReadOnlyField()
     item_count = serializers.ReadOnlyField()
+    shipment_amount_usd = serializers.SerializerMethodField()
+    shipment_amount_uzs = serializers.SerializerMethodField()
     
     class Meta:
         model = Cart
@@ -409,10 +438,35 @@ class CartSummarySerializer(serializers.ModelSerializer):
             'total_items',
             'subtotal_price',
             'shipment_amount',
+            'shipment_amount_usd',
+            'shipment_amount_uzs',
             'total_price',
             'item_count',
             'updated_at'
         ]
+    
+    def get_shipment_amount_usd(self, obj):
+        """Get delivery fee in USD."""
+        from acham.orders.models import DeliveryFee
+        from decimal import Decimal
+        try:
+            fee_usd = DeliveryFee.objects.get(currency="USD", is_active=True)
+            return str(fee_usd.amount)
+        except DeliveryFee.DoesNotExist:
+            return "0"
+    
+    def get_shipment_amount_uzs(self, obj):
+        """Get delivery fee in UZS."""
+        from acham.orders.models import DeliveryFee
+        from decimal import Decimal
+        try:
+            fee_uzs = DeliveryFee.objects.get(currency="UZS", is_active=True)
+            # Если есть amount_uzs, используем его, иначе amount
+            if fee_uzs.amount_uzs is not None:
+                return str(fee_uzs.amount_uzs)
+            return str(fee_uzs.amount)
+        except DeliveryFee.DoesNotExist:
+            return "0"
 
 
 class ProductCompleteDetailsSerializer(serializers.Serializer):

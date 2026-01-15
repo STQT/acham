@@ -149,6 +149,16 @@ class PaymentInitiateView(APIView):
         # Ensure is_uzbekistan is a boolean (not None)
         is_uzbekistan = bool(is_uzbekistan)
         
+        # Update shipping amount if needed (ensure we use current delivery fee)
+        # This ensures that if delivery fee was changed after order creation,
+        # we use the current fee for payment
+        from acham.orders.models import DeliveryFee
+        current_delivery_fee = DeliveryFee.get_fee_for_currency(order.currency)
+        if order.shipping_amount != current_delivery_fee:
+            logger.info(f"Updating shipping amount: {order.shipping_amount} -> {current_delivery_fee} {order.currency}")
+            order.shipping_amount = current_delivery_fee
+            order.recalculate_totals(save=True)
+        
         # Always use UZS for OCTO API (CLS support may vary by shop/test mode)
         octo_currency = "UZS"
         
