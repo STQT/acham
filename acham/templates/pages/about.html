@@ -1,3 +1,155 @@
 {% extends "base.html" %}
+{% load static %}
 
+{% block title %}О нас - ACHAM{% endblock %}
 
+{% block main %}
+<div class="about-page">
+    {% if hero_section %}
+    <!-- Hero Section -->
+    <section class="hero-section" style="position: relative; min-height: 80vh; background: #f5f5f5;">
+        {% if hero_section.hero_image %}
+        <div class="hero-image" style="width: 100%; height: 80vh; background-image: url('{{ hero_section.hero_image.url }}'); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center;">
+            <div class="hero-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3);"></div>
+            <div class="hero-content" style="position: relative; z-index: 1; text-align: center; color: white;">
+                {% if hero_section.founder_name %}
+                <h1 style="font-size: 3rem; margin-bottom: 0.5rem; font-weight: 300;">{{ hero_section.founder_name }}</h1>
+                {% endif %}
+                {% if hero_section.founder_title %}
+                <p style="font-size: 1.2rem; opacity: 0.9;">{{ hero_section.founder_title }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {% if history_section %}
+    <!-- History Section -->
+    <section class="history-section" style="padding: 4rem 2rem; background: #f5f5f5;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto;">
+            {% if history_section.title %}
+            <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 2rem; color: #333;">{{ history_section.title }}</h2>
+            {% endif %}
+            {% if history_section.content %}
+            <div class="history-content" style="max-width: 800px; margin: 0 auto; line-height: 1.8; color: #555; font-size: 1.1rem;">
+                {{ history_section.content|linebreaks }}
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if philosophy_section %}
+    <!-- Philosophy Section -->
+    <section class="philosophy-section" style="padding: 4rem 2rem; background: white;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+            <div class="philosophy-content">
+                {% if philosophy_section.title %}
+                <h2 style="font-size: 2.5rem; margin-bottom: 2rem; color: #333;">{{ philosophy_section.title }}</h2>
+                {% endif %}
+                {% if philosophy_section.content %}
+                <div style="line-height: 1.8; color: #555; font-size: 1.1rem;">
+                    {{ philosophy_section.content|linebreaks }}
+                </div>
+                {% endif %}
+            </div>
+            {% if philosophy_section.image %}
+            <div class="philosophy-image" style="text-align: center;">
+                <img src="{{ philosophy_section.image.url }}" alt="{{ philosophy_section.title }}" style="max-width: 100%; height: auto; border-radius: 8px;">
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if fabrics_section %}
+    <!-- Fabrics Section -->
+    <section class="fabrics-section" style="padding: 4rem 2rem; background: #f5f5f5;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto;">
+            <div class="fabrics-content" style="max-width: 600px; margin: 0 auto 3rem;">
+                {% if fabrics_section.title %}
+                <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 2rem; color: #333;">{{ fabrics_section.title }}</h2>
+                {% endif %}
+                {% if fabrics_section.content %}
+                <div style="line-height: 1.8; color: #555; font-size: 1.1rem; text-align: center;">
+                    {{ fabrics_section.content|linebreaks }}
+                </div>
+                {% endif %}
+            </div>
+            {% if fabrics_section.image or fabrics_section.image_2 or fabrics_section.image_3 %}
+            <div class="fabrics-images" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 3rem;">
+                {% if fabrics_section.image %}
+                <div class="fabric-image">
+                    <img src="{{ fabrics_section.image.url }}" alt="Fabric 1" style="width: 100%; height: auto; border-radius: 8px; object-fit: cover;">
+                </div>
+                {% endif %}
+                {% if fabrics_section.image_2 %}
+                <div class="fabric-image">
+                    <img src="{{ fabrics_section.image_2.url }}" alt="Fabric 2" style="width: 100%; height: auto; border-radius: 8px; object-fit: cover;">
+                </div>
+                {% endif %}
+                {% if fabrics_section.image_3 %}
+                <div class="fabric-image">
+                    <img src="{{ fabrics_section.image_3.url }}" alt="Fabric 3" style="width: 100%; height: auto; border-radius: 8px; object-fit: cover;">
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if process_section %}
+    <!-- Process Section -->
+    <section class="process-section" style="padding: 4rem 2rem; background: white;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto;">
+            {% if process_section.title %}
+            <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 2rem; color: #333;">{{ process_section.title }}</h2>
+            {% endif %}
+            {% if process_section.process_description %}
+            <div class="process-description" style="max-width: 800px; margin: 0 auto 3rem; line-height: 1.8; color: #555; font-size: 1.1rem; text-align: center;">
+                {{ process_section.process_description|linebreaks }}
+            </div>
+            {% endif %}
+            {% if process_section.process_items %}
+            <div class="process-items" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-top: 3rem;">
+                {% for item in process_section.process_items %}
+                <div class="process-item" style="text-align: center; padding: 1.5rem;">
+                    {% if item.icon %}
+                    <div class="process-icon" style="font-size: 3rem; margin-bottom: 1rem;">
+                        {{ item.icon|safe }}
+                    </div>
+                    {% endif %}
+                    {% if item.label %}
+                    <h3 style="font-size: 1.2rem; color: #333; margin-top: 1rem;">{{ item.label }}</h3>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<style>
+@media (max-width: 768px) {
+    .philosophy-section .container {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .hero-content h1 {
+        font-size: 2rem !important;
+    }
+    
+    .fabrics-images {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .process-items {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+</style>
+{% endblock main %}

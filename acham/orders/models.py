@@ -290,6 +290,14 @@ class DeliveryFee(models.Model):
         verbose_name=_("Delivery Fee Amount"),
         help_text=_("Fixed delivery fee amount in the specified currency"),
     )
+    amount_uzs = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name=_("Delivery Fee Amount (UZS)"),
+        help_text=_("Fixed delivery fee amount in Uzbekistani Som (UZS)"),
+    )
     is_active = models.BooleanField(
         default=True,
         verbose_name=_("Is Active"),
@@ -304,6 +312,8 @@ class DeliveryFee(models.Model):
         ordering = ["currency"]
     
     def __str__(self):
+        if self.currency == "UZS" and self.amount_uzs:
+            return f"Delivery Fee: {self.amount_uzs} {self.currency}"
         return f"Delivery Fee: {self.amount} {self.currency}"
     
     @classmethod
@@ -311,6 +321,10 @@ class DeliveryFee(models.Model):
         """Get active delivery fee for a currency."""
         try:
             fee = cls.objects.get(currency=currency.upper(), is_active=True)
+            # Если валюта UZS и есть amount_uzs, используем его
+            if currency.upper() == "UZS" and fee.amount_uzs is not None:
+                return Decimal(str(fee.amount_uzs))
+            # Иначе используем amount
             return Decimal(str(fee.amount))
         except cls.DoesNotExist:
             # Return 0 if no fee configured

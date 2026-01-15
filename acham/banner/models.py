@@ -201,3 +201,117 @@ class EmailSubscription(models.Model):
     
     def __str__(self):
         return f"Subscription: {self.email} ({self.language}) - {self.created_at.strftime('%Y-%m-%d')}"
+
+
+class AboutPageSection(models.Model):
+    """Model for About page sections that can be edited through admin."""
+    
+    class SectionType(models.TextChoices):
+        HERO = "hero", _("Hero Section")
+        HISTORY = "history", _("History")
+        PHILOSOPHY = "philosophy", _("Philosophy")
+        FABRICS = "fabrics", _("Used Fabrics")
+        PROCESS = "process", _("Process and Cost")
+    
+    section_type = models.CharField(
+        max_length=50,
+        choices=SectionType.choices,
+        unique=True,
+        verbose_name=_("Section Type"),
+        help_text=_("Type of section on the About page")
+    )
+    
+    # Hero section fields
+    founder_name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Founder Name"),
+        help_text=_("Name of the founder (for hero section)")
+    )
+    founder_title = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Founder Title"),
+        help_text=_("Title/role of the founder (e.g., 'Founder of ACHAM')")
+    )
+    hero_image = models.ImageField(
+        upload_to='about_page/',
+        blank=True,
+        null=True,
+        verbose_name=_("Hero Image"),
+        help_text=_("Hero section image (founder photo)")
+    )
+    
+    # Common fields for all sections
+    title = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Title"),
+        help_text=_("Section title")
+    )
+    content = models.TextField(
+        blank=True,
+        verbose_name=_("Content"),
+        help_text=_("Section content text")
+    )
+    image = models.ImageField(
+        upload_to='about_page/',
+        blank=True,
+        null=True,
+        verbose_name=_("Image"),
+        help_text=_("Section image")
+    )
+    
+    # Additional images for fabrics section
+    image_2 = models.ImageField(
+        upload_to='about_page/',
+        blank=True,
+        null=True,
+        verbose_name=_("Image 2"),
+        help_text=_("Additional image (for fabrics section)")
+    )
+    image_3 = models.ImageField(
+        upload_to='about_page/',
+        blank=True,
+        null=True,
+        verbose_name=_("Image 3"),
+        help_text=_("Additional image (for fabrics section)")
+    )
+    
+    # Process section fields
+    process_description = models.TextField(
+        blank=True,
+        verbose_name=_("Process Description"),
+        help_text=_("Description for process section")
+    )
+    
+    # Icons for process section (stored as JSON)
+    process_items = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_("Process Items"),
+        help_text=_("List of process items with icons and labels (JSON format)")
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_("Is Active"),
+        help_text=_("Whether this section is displayed")
+    )
+    
+    order = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("Order"),
+        help_text=_("Display order on the page")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['order', 'section_type']
+        verbose_name = _("About Page Section")
+        verbose_name_plural = _("About Page Sections")
+    
+    def __str__(self):
+        return f"{self.get_section_type_display()} - {self.title or 'No title'}"

@@ -172,7 +172,7 @@ class CurrencyRateAdmin(admin.ModelAdmin):
 
 @admin.register(DeliveryFee)
 class DeliveryFeeAdmin(admin.ModelAdmin):
-    list_display = ("currency", "amount", "is_active", "created_at", "updated_at")
+    list_display = ("currency", "amount", "amount_uzs", "is_active", "created_at", "updated_at")
     list_filter = ("currency", "is_active", "created_at")
     search_fields = ("currency",)
     ordering = ("currency",)
@@ -182,6 +182,7 @@ class DeliveryFeeAdmin(admin.ModelAdmin):
             "fields": (
                 "currency",
                 "amount",
+                "amount_uzs",
                 "is_active",
             )
         }),

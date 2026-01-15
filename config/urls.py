@@ -9,12 +9,13 @@ from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 from acham.orders.api.payment_views import payment_notify
+from acham.banner.views import AboutPageView
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
     path(
         "about/",
-        TemplateView.as_view(template_name="pages/about.html"),
+        AboutPageView.as_view(),
         name="about",
     ),
     # Django Admin, use {% url 'admin:index' %}
