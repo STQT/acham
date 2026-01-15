@@ -4,8 +4,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db import IntegrityError
 
-from ..models import FAQ, StaticPage, ContactMessage, ReturnRequest, EmailSubscription
-from .serializers import FAQSerializer, StaticPageSerializer, ContactMessageSerializer, ReturnRequestSerializer, EmailSubscriptionSerializer
+from ..models import FAQ, StaticPage, ContactMessage, ReturnRequest, EmailSubscription, AboutPageSection
+from .serializers import (
+    FAQSerializer, 
+    StaticPageSerializer, 
+    ContactMessageSerializer, 
+    ReturnRequestSerializer, 
+    EmailSubscriptionSerializer,
+    AboutPageSectionSerializer
+)
 from ..tasks import send_subscription_confirmation_email
 
 
@@ -148,3 +155,59 @@ class EmailSubscriptionCreateView(generics.CreateAPIView):
             existing_subscription = EmailSubscription.objects.get(email=email)
             serializer = self.get_serializer(existing_subscription)
             return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=['about-page'],
+    summary="List all about page sections",
+    description="Retrieve a list of all active about page sections ordered by display order."
+)
+class AboutPageSectionListView(generics.ListAPIView):
+    """List all active about page sections."""
+    queryset = AboutPageSection.objects.filter(is_active=True).order_by('order', 'section_type')
+    serializer_class = AboutPageSectionSerializer
+
+
+@extend_schema(
+    tags=['about-page'],
+    summary="Retrieve about page section by type",
+    description="Retrieve a specific about page section by its type (hero, history, philosophy, fabrics, process)."
+)
+class AboutPageSectionByTypeView(generics.RetrieveAPIView):
+    """Retrieve an about page section by its type."""
+    queryset = AboutPageSection.objects.filter(is_active=True)
+    serializer_class = AboutPageSectionSerializer
+    lookup_field = 'section_type'
+    lookup_url_kwarg = 'section_type'
+
+
+@extend_schema(
+    tags=['about-page'],
+    summary="Get complete about page data",
+    description="Retrieve all about page sections organized by type in a single response."
+)
+class AboutPageView(generics.GenericAPIView):
+    """Get complete about page data with all sections organized by type."""
+    serializer_class = AboutPageSectionSerializer
+    
+    def get(self, request, *args, **kwargs):
+        """Return all active sections organized by type."""
+        sections = AboutPageSection.objects.filter(is_active=True).order_by('order', 'section_type')
+        serializer = self.get_serializer(sections, many=True)
+        
+        # Organize sections by type for easier frontend consumption
+        organized_data = {
+            'hero': None,
+            'history': None,
+            'philosophy': None,
+            'fabrics': None,
+            'process': None,
+            'sections': serializer.data
+        }
+        
+        for section_data in serializer.data:
+            section_type = section_data.get('section_type')
+            if section_type in organized_data:
+                organized_data[section_type] = section_data
+        
+        return Response(organized_data, status=status.HTTP_200_OK)
