@@ -419,3 +419,20 @@ class OrderCreateSerializer(serializers.Serializer):
             )
 
         return order
+
+
+class OrderEmailSubscriptionSerializer(serializers.Serializer):
+    """Serializer for subscribing to order status updates via email."""
+    
+    email = serializers.EmailField(required=True)
+    language = serializers.ChoiceField(
+        choices=[("uz", "Uzbek"), ("ru", "Russian"), ("en", "English")],
+        required=False,
+        default="ru",
+    )
+
+    def validate_email(self, value):
+        """Validate email format."""
+        if not value:
+            raise serializers.ValidationError(_("Email is required."))
+        return value.lower().strip()

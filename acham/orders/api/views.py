@@ -10,6 +10,7 @@ from acham.orders.api.serializers import (
     OrderSummarySerializer,
     OrderCreateSerializer,
     OrderUpdateSerializer,
+    OrderEmailSubscriptionSerializer,
 )
 from acham.orders.models import Order, OrderStatus
 
@@ -87,3 +88,56 @@ class OrderStatusListView(APIView):
             for choice in OrderStatus
         ]
         return Response(statuses)
+
+
+class OrderEmailSubscriptionView(OrderQuerySetMixin, APIView):
+    """Subscribe to order status updates via email."""
+    
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, order_id, *args, **kwargs):
+        """
+        Subscribe to order status updates.
+        
+        POST /api/orders/{order_id}/subscribe-email/
+        Body: {
+            "email": "user@example.com",
+            "language": "ru"  # optional: uz, ru, en
+        }
+        """
+        # Get the order
+        try:
+            order = Order.objects.get(public_id=order_id)
+        except Order.DoesNotExist:
+            return Response(
+                {"error": "Order not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Check if user has access to this order
+        if not request.user.is_staff and order.user != request.user:
+            return Response(
+                {"error": "You don't have permission to access this order"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Validate the email
+        serializer = OrderEmailSubscriptionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        email = serializer.validated_data["email"]
+        language = serializer.validated_data.get("language", "ru")
+
+        # Update order with customer email
+        order.customer_email = email
+        order.save(update_fields=["customer_email", "updated_at"])
+
+        return Response(
+            {
+                "message": "Successfully subscribed to order status updates",
+                "email": email,
+                "language": language,
+                "order_number": order.number,
+            },
+            status=status.HTTP_200_OK,
+        )

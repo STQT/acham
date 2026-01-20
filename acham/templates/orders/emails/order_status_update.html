@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% load i18n %}{% trans "Order Status Update" %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #ffffff;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        .status-update {
+            background-color: #e8f4f8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 4px solid #0066cc;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .status-old {
+            background-color: #e0e0e0;
+            color: #666;
+        }
+        .status-new {
+            background-color: #28a745;
+            color: white;
+        }
+        .order-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    {% load i18n %}
+    <div class="header">
+        <h1>{{ site_name }}</h1>
+        <h2>{% trans "Order Status Update" %}</h2>
+    </div>
+    
+    <div class="content">
+        <p>{% trans "Hello" %}!</p>
+        
+        <p>{% blocktrans with order_number=order.number %}The status of your order <strong>{{ order_number }}</strong> has been updated.{% endblocktrans %}</p>
+        
+        <div class="status-update">
+            <h3>{% trans "Status Change" %}:</h3>
+            <p>
+                <span class="status-badge status-old">{{ old_status_display }}</span>
+                <strong>→</strong>
+                <span class="status-badge status-new">{{ new_status_display }}</span>
+            </p>
+        </div>
+        
+        <div class="order-info">
+            <h3>{% trans "Order Information" %}:</h3>
+            <p><strong>{% trans "Order Number" %}:</strong> {{ order.number }}</p>
+            <p><strong>{% trans "Order Date" %}:</strong> {{ order.placed_at|date:"d.m.Y H:i" }}</p>
+            <p><strong>{% trans "Current Status" %}:</strong> {{ new_status_display }}</p>
+            {% if order.expected_delivery %}
+            <p><strong>{% trans "Expected Delivery" %}:</strong> {{ order.expected_delivery|date:"d.m.Y" }}</p>
+            {% endif %}
+            <p><strong>{% trans "Total Amount" %}:</strong> {{ order.total_amount }} {{ order.currency }}</p>
+        </div>
+        
+        <p>{% trans "Thank you for your order! We will keep you updated on any changes." %}</p>
+    </div>
+    
+    <div class="footer">
+        <p>{% trans "This is an automated message, please do not reply." %}</p>
+        <p>&copy; {{ site_name }}. {% trans "All rights reserved" %}.</p>
+    </div>
+</body>
+</html>

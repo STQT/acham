@@ -11,6 +11,11 @@ from rest_framework.authtoken.views import obtain_auth_token
 from acham.orders.api.payment_views import payment_notify
 from acham.banner.views import AboutPageView
 
+from config.error_handlers import handler400
+from config.error_handlers import handler403
+from config.error_handlers import handler404
+from config.error_handlers import handler500
+
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
     path(
@@ -76,3 +81,10 @@ if settings.DEBUG:
             path("__debug__/", include(debug_toolbar.urls)),
             *urlpatterns,
         ]
+
+# Custom error handlers that return JSON instead of HTML
+# Django automatically looks for these variables in the root URLconf
+handler400 = handler400
+handler403 = handler403
+handler404 = handler404
+handler500 = handler500

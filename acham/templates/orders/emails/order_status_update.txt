@@ -1,0 +1,22 @@
+{% load i18n %}{{ site_name }}
+{% trans "Order Status Update" %}
+
+{% trans "Hello" %}!
+
+{% blocktrans with order_number=order.number %}The status of your order {{ order_number }} has been updated.{% endblocktrans %}
+
+{% trans "Status Change" %}:
+{{ old_status_display }} → {{ new_status_display }}
+
+{% trans "Order Information" %}:
+- {% trans "Order Number" %}: {{ order.number }}
+- {% trans "Order Date" %}: {{ order.placed_at|date:"d.m.Y H:i" }}
+- {% trans "Current Status" %}: {{ new_status_display }}
+{% if order.expected_delivery %}- {% trans "Expected Delivery" %}: {{ order.expected_delivery|date:"d.m.Y" }}{% endif %}
+- {% trans "Total Amount" %}: {{ order.total_amount }} {{ order.currency }}
+
+{% trans "Thank you for your order! We will keep you updated on any changes." %}
+
+---
+{% trans "This is an automated message, please do not reply." %}
+© {{ site_name }}. {% trans "All rights reserved" %}.

@@ -218,6 +218,103 @@ def send_order_notification(self, order_id: int, language: str | None = None) ->
 
 
 @shared_task(bind=True, max_retries=3)
+def send_order_status_update_email(
+    self,
+    order_id: int,
+    old_status: str,
+    new_status: str,
+    language: str | None = None,
+) -> dict[str, Any]:
+    """Send email notification when order status changes.
+    
+    Args:
+        order_id: Order ID
+        old_status: Previous order status
+        new_status: New order status
+        language: Language code (uz, ru, en). If None, uses default from settings.
+    """
+    try:
+        order = Order.objects.select_related("user").prefetch_related("items").get(pk=order_id)
+    except Order.DoesNotExist:
+        logger.error(f"Order {order_id} not found for status update email")
+        return {"status": "error", "message": "Order not found"}
+
+    # Get email from order or user
+    email = order.customer_email or (order.user.email if order.user else None)
+    
+    if not email:
+        logger.warning(f"No email found for order {order.number}")
+        return {"status": "skipped", "message": "No email address available"}
+
+    # Determine language
+    if not language:
+        language = getattr(settings, "LANGUAGE_CODE", "ru")[:2]
+    
+    # Validate language code
+    available_languages = ["uz", "ru", "en"]
+    if language not in available_languages:
+        language = "ru"
+
+    try:
+        # Activate language for translation
+        translation.activate(language)
+        
+        try:
+            # Status display names
+            from acham.orders.models import OrderStatus as OS
+            status_choices_dict = dict(OS.choices)
+            old_status_display = status_choices_dict.get(old_status, old_status)
+            new_status_display = status_choices_dict.get(new_status, new_status)
+
+            # Prepare email context
+            context = {
+                "order": order,
+                "order_items": order.items.all(),
+                "old_status": old_status,
+                "new_status": new_status,
+                "old_status_display": old_status_display,
+                "new_status_display": new_status_display,
+                "site_name": getattr(settings, "SITE_NAME", "ACHAM Collection"),
+            }
+
+            # Render email template
+            subject = _("Order {order_number} - Status Update").format(order_number=order.number)
+            message = render_to_string("orders/emails/order_status_update.txt", context)
+            html_message = render_to_string("orders/emails/order_status_update.html", context)
+
+            # Send email
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+
+            logger.info(
+                f"Order status update email sent to {email} for order {order.number} "
+                f"({old_status} → {new_status}, language: {language})"
+            )
+            return {
+                "status": "success",
+                "email": email,
+                "order_number": order.number,
+                "old_status": old_status,
+                "new_status": new_status,
+                "language": language,
+            }
+        finally:
+            # Deactivate language
+            translation.deactivate()
+
+    except Exception as exc:
+        logger.error(f"Failed to send order status update email: {exc}", exc_info=True)
+        # Retry the task
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+
+
+@shared_task(bind=True, max_retries=3)
 def update_currency_rates(self) -> dict[str, Any]:
     """
     Update currency exchange rates from Central Bank of Uzbekistan API.

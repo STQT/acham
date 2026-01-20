@@ -7,13 +7,19 @@ from acham.orders.api.payment_views import (
     PaymentStatusView,
     payment_notify,
 )
-from acham.orders.api.views import OrderDetailView, OrderListView, OrderStatusListView
+from acham.orders.api.views import (
+    OrderDetailView,
+    OrderListView,
+    OrderStatusListView,
+    OrderEmailSubscriptionView,
+)
 
 
 urlpatterns = [
     path("", OrderListView.as_view(), name="order-list"),
     path("statuses/", OrderStatusListView.as_view(), name="order-statuses"),
     path("<uuid:order_id>/", OrderDetailView.as_view(), name="order-detail"),
+    path("<uuid:order_id>/subscribe-email/", OrderEmailSubscriptionView.as_view(), name="order-subscribe-email"),
     # Payment endpoints
     path("<uuid:order_id>/payment/initiate/", PaymentInitiateView.as_view(), name="payment-initiate"),
     path("<uuid:order_id>/payment/confirm/", PaymentConfirmView.as_view(), name="payment-confirm"),
