@@ -21,6 +21,14 @@ class Collection(models.Model):
         blank=True,
         null=True
     )
+    
+    video = models.FileField(
+        upload_to='collections/videos/',
+        verbose_name=_("Video"),
+        help_text=_("Video file for the collection (optional)"),
+        blank=True,
+        null=True
+    )
 
     slug = models.SlugField(
         max_length=200,

@@ -99,7 +99,7 @@ class OctoService:
         # This is a final safety check - currency should already be validated before calling this method
         if currency != "UZS":
             logger.warning(f"Currency '{currency}' may not be supported by OCTO API, forcing to UZS")
-            valid_currency = "UZS"
+        valid_currency = "UZS"
         else:
             valid_currency = currency
         

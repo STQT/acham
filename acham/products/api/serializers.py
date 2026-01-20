@@ -18,6 +18,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     
     product_count = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
+    video = serializers.SerializerMethodField()
     
     class Meta:
         model = Collection
@@ -25,6 +26,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'image',
+            'video',
             'slug',
             'is_active',
             'is_new_arrival',
@@ -44,6 +46,16 @@ class CollectionSerializer(serializers.ModelSerializer):
             return None
         request = self.context.get('request')
         url = obj.image.url
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+    
+    def get_video(self, obj) -> str | None:
+        """Get the absolute URL of the video file."""
+        if not obj.video:
+            return None
+        request = self.context.get('request')
+        url = obj.video.url
         if request:
             return request.build_absolute_uri(url)
         return url

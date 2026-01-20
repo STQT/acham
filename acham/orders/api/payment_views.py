@@ -85,6 +85,21 @@ class PaymentInitiateView(APIView):
                 "nds": 1,  # VAT rate (1 = 12%)
             }
             basket.append(basket_item)
+        
+        # Add delivery fee to basket
+        # Get delivery fee in original currency (will be converted later if needed)
+        delivery_fee_amount = order.shipping_amount
+        if delivery_fee_amount and delivery_fee_amount > 0:
+            delivery_basket_item = {
+                "position_desc": "Доставка / Delivery / Yetkazib berish",
+                "count": 1,
+                "price": float(delivery_fee_amount),
+                "spic": "00305001001000000",  # Default SPIC code for delivery
+                "inn": "",
+                "package_code": "1425207",
+                "nds": 1,  # VAT rate (1 = 12%)
+            }
+            basket.append(delivery_basket_item)
 
         # Prepare user data
         user_data = {
@@ -168,14 +183,29 @@ class PaymentInitiateView(APIView):
             octo_total_sum = order.total_amount
             logger.info(f"Order already in UZS (using price_uzs): {octo_total_sum} UZS - no conversion needed")
             # Basket items already have correct prices in UZS from order.items.unit_price
+            # But we need to ensure delivery fee is in UZS too
+            if basket and basket[-1]["position_desc"] in ["Доставка / Delivery / Yetkazib berish"]:
+                # Get delivery fee in UZS from DeliveryFee model
+                from acham.orders.models import DeliveryFee
+                try:
+                    delivery_fee_uzs = DeliveryFee.objects.get(currency="UZS", is_active=True)
+                    if delivery_fee_uzs.amount_uzs is not None:
+                        basket[-1]["price"] = float(delivery_fee_uzs.amount_uzs)
+                    else:
+                        basket[-1]["price"] = float(delivery_fee_uzs.amount)
+                    logger.info(f"Using delivery fee in UZS: {basket[-1]['price']}")
+                except DeliveryFee.DoesNotExist:
+                    logger.warning("DeliveryFee for UZS not found, using order shipping_amount")
         elif currency == "USD" or order.currency == "USD":
             # Convert USD to UZS
             octo_total_sum = order.total_amount * USD_TO_UZS_RATE
             logger.info(f"Converting USD to UZS: {order.total_amount} USD -> {octo_total_sum} UZS (rate: {USD_TO_UZS_RATE})")
-            # Convert basket item prices from USD to UZS
+            # Convert basket item prices from USD to UZS (including delivery fee)
             for basket_item in basket:
                 if isinstance(basket_item.get("price"), (int, float)):
+                    original_price = basket_item["price"]
                     basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
+                    logger.info(f"Converted {basket_item['position_desc']}: {original_price} USD -> {basket_item['price']} UZS")
         elif currency == "UZS":
             # Currency is already UZS, use as-is
             octo_total_sum = order.total_amount
@@ -187,7 +217,7 @@ class PaymentInitiateView(APIView):
             if order.currency == "USD":
                 octo_total_sum = order.total_amount * USD_TO_UZS_RATE
                 logger.info(f"Converting {order.currency} to UZS: {order.total_amount} {order.currency} -> {octo_total_sum} UZS")
-                # Convert basket item prices
+                # Convert basket item prices (including delivery)
                 for basket_item in basket:
                     if isinstance(basket_item.get("price"), (int, float)):
                         basket_item["price"] = float(Decimal(str(basket_item["price"])) * USD_TO_UZS_RATE)
@@ -199,6 +229,17 @@ class PaymentInitiateView(APIView):
         if octo_currency != "UZS":
             logger.warning(f"Currency '{octo_currency}' not supported by OCTO, forcing to UZS")
             octo_currency = "UZS"
+        
+        # Calculate and log basket total to verify it matches octo_total_sum
+        basket_total = sum(item["price"] * item["count"] for item in basket)
+        logger.info(f"Basket total calculated: {basket_total} {octo_currency}")
+        logger.info(f"OCTO total_sum: {octo_total_sum} {octo_currency}")
+        logger.info(f"Difference: {abs(float(octo_total_sum) - basket_total):.2f}")
+        
+        # Verify that basket total matches octo_total_sum (with small tolerance for rounding)
+        if abs(float(octo_total_sum) - basket_total) > 1.0:
+            logger.warning(f"Basket total ({basket_total}) does not match octo_total_sum ({octo_total_sum})!")
+            logger.warning(f"Basket items: {basket}")
         
         logger.info(f"Payment methods: {payment_methods}, OCTO currency: {octo_currency}")
 

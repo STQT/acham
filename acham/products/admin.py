@@ -169,7 +169,7 @@ class CollectionAdmin(TranslationAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'slug', 'image')
+            'fields': ('name', 'slug', 'image', 'video')
         }),
         ('Settings', {
             'fields': ('is_active', 'is_new_arrival', 'is_featured_banner')
