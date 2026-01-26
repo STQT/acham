@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from .models import (
@@ -9,6 +10,7 @@ from .models import (
     PaymentTransaction,
     CurrencyRate,
     DeliveryFee,
+    OrderStatus,
 )
 
 
@@ -25,11 +27,41 @@ class OrderAddressInline(admin.StackedInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("number", "user", "status", "total_amount", "currency", "placed_at")
+    list_display = ("number", "user", "colored_status", "total_amount", "currency", "placed_at")
     list_filter = ("status", "currency", "placed_at")
     search_fields = ("number", "external_id", "customer_email", "customer_phone")
     inlines = (OrderItemInline, OrderAddressInline)
     ordering = ("-placed_at",)
+    
+    def colored_status(self, obj):
+        """Отображает статус заказа с цветом."""
+        status = obj.status
+        status_display = obj.get_status_display()
+        
+        # Определяем цвет в зависимости от статуса
+        if status in [
+            OrderStatus.CANCELLED,
+            OrderStatus.REFUNDED,
+            OrderStatus.RETURNED,
+            OrderStatus.PAYMENT_FAILED,
+        ]:
+            # Отклонен - красный
+            color = "red"
+        elif status == OrderStatus.DELIVERED:
+            # Успешно - зеленый
+            color = "green"
+        else:
+            # В процессе - желтый
+            color = "yellow"
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            status_display,
+        )
+    
+    colored_status.short_description = _("Status")
+    colored_status.admin_order_field = "status"
     fieldsets = (
         (_("Identification"), {"fields": ("number", "public_id", "external_id", "status", "status_label")}),
         (_("Ownership"), {"fields": ("user",)}),

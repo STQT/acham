@@ -601,6 +601,13 @@ OCTO_SHOP_ID = env("OCTO_SHOP_ID", default=None)
 OCTO_SECRET = env("OCTO_SECRET", default=None)
 OCTO_TEST_MODE = env.bool("OCTO_TEST_MODE", default=False)
 
+# Telegram Bot Configuration
+# ------------------------------------------------------------------------------
+TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default=None)
+TELEGRAM_CHAT_ID = env("TELEGRAM_CHAT_ID", default=None)
+# Time threshold in minutes for pending orders notification (default: 60 minutes)
+TELEGRAM_PENDING_ORDER_THRESHOLD_MINUTES = env.int("TELEGRAM_PENDING_ORDER_THRESHOLD_MINUTES", default=60)
+
 # Google reCAPTCHA
 # ------------------------------------------------------------------------------
 RECAPTCHA_SECRET_KEY = env("RECAPTCHA_SECRET_KEY", default=None)

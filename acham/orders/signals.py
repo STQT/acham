@@ -6,7 +6,7 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from acham.orders.models import Order, OrderStatusHistory
-from acham.orders.tasks import send_order_status_update_email
+from acham.orders.tasks import send_order_status_update_email, send_order_telegram_notification
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +26,17 @@ def track_order_status_change(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Order)
 def send_status_update_notification(sender, instance, created, **kwargs):
-    """Send email notification when order status changes."""
+    """Send notifications when order is created or status changes."""
     if created:
-        # Skip for newly created orders
+        # Send Telegram notification for new order
+        try:
+            send_order_telegram_notification.delay(instance.pk, message_type="new")
+            logger.info(f"Queued Telegram notification for new order {instance.number}")
+        except Exception as exc:
+            logger.error(
+                f"Failed to queue Telegram notification for new order {instance.number}: {exc}",
+                exc_info=True,
+            )
         return
 
     old_status = getattr(instance, "_old_status", None)
@@ -66,3 +74,16 @@ def send_status_update_notification(sender, instance, created, **kwargs):
                     f"Failed to queue status update email for order {instance.number}: {exc}",
                     exc_info=True,
                 )
+        
+        # Send Telegram notification for status update
+        try:
+            send_order_telegram_notification.delay(instance.pk, message_type="status_update")
+            logger.info(
+                f"Queued Telegram status update notification for order {instance.number} "
+                f"({old_status} → {new_status})"
+            )
+        except Exception as exc:
+            logger.error(
+                f"Failed to queue Telegram status update notification for order {instance.number}: {exc}",
+                exc_info=True,
+            )

@@ -11,6 +11,11 @@ from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
 from acham.orders.models import Order
+from acham.orders.services.telegram_service import (
+    TelegramBotClient,
+    TelegramConfigurationError,
+    TelegramAPIError,
+)
 from acham.users.services.eskiz import EskizSMSClient, EskizConfigurationError, EskizAPIError
 
 logger = logging.getLogger(__name__)
@@ -389,5 +394,104 @@ def update_currency_rates(self) -> dict[str, Any]:
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
     except Exception as exc:
         logger.error(f"Error updating currency rates: {exc}", exc_info=True)
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+
+
+@shared_task(bind=True, max_retries=3)
+def send_order_telegram_notification(self, order_id: int, message_type: str = "new") -> dict[str, Any]:
+    """Send order notification to Telegram chat.
+    
+    Args:
+        order_id: Order ID
+        message_type: Type of notification ('new', 'pending', 'status_update')
+        
+    Returns:
+        Task result dictionary
+    """
+    try:
+        order = Order.objects.select_related("user").prefetch_related("items").get(pk=order_id)
+    except Order.DoesNotExist:
+        logger.error(f"Order {order_id} not found for Telegram notification")
+        return {"status": "error", "message": "Order not found"}
+
+    try:
+        telegram_client = TelegramBotClient()
+        result = telegram_client.send_order_notification(order, message_type=message_type)
+        
+        logger.info(
+            f"Telegram notification sent for order {order.number} "
+            f"(type: {message_type}, message_id: {result.get('result', {}).get('message_id')})"
+        )
+        return {
+            "status": "success",
+            "order_number": order.number,
+            "message_type": message_type,
+            "message_id": result.get("result", {}).get("message_id"),
+        }
+    except TelegramConfigurationError as exc:
+        logger.warning(f"Telegram not configured: {exc}")
+        return {"status": "skipped", "message": "Telegram bot not configured"}
+    except TelegramAPIError as exc:
+        logger.error(f"Telegram API error: {exc}")
+        # Retry the task
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+    except Exception as exc:
+        logger.error(f"Failed to send Telegram notification: {exc}", exc_info=True)
+        # Retry the task
+        raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
+
+
+@shared_task(bind=True, max_retries=3)
+def check_pending_orders(self) -> dict[str, Any]:
+    """
+    Check for orders that are in PENDING_PAYMENT status for more than specified time
+    and send Telegram notifications to remind staff to contact customers.
+    
+    This task should be run periodically (e.g., every 30 minutes or 1 hour).
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    from acham.orders.models import OrderStatus
+    
+    try:
+        # Check orders that have been in PENDING_PAYMENT status for more than 1 hour
+        # You can adjust this threshold as needed
+        threshold_minutes = getattr(settings, "TELEGRAM_PENDING_ORDER_THRESHOLD_MINUTES", 60)
+        threshold_time = timezone.now() - timedelta(minutes=threshold_minutes)
+        
+        pending_orders = Order.objects.filter(
+            status=OrderStatus.PENDING_PAYMENT,
+            placed_at__lte=threshold_time,
+        ).select_related("user").prefetch_related("items")
+        
+        notification_count = 0
+        skipped_count = 0
+        
+        for order in pending_orders:
+            try:
+                # Send notification for each pending order
+                send_order_telegram_notification.delay(order.id, message_type="pending")
+                notification_count += 1
+                logger.info(f"Queued pending order notification for order {order.number}")
+            except Exception as exc:
+                logger.error(f"Failed to queue notification for order {order.number}: {exc}")
+                skipped_count += 1
+        
+        logger.info(
+            f"Pending orders check completed: {notification_count} notifications queued, "
+            f"{skipped_count} skipped, {pending_orders.count()} total pending orders"
+        )
+        
+        return {
+            "status": "success",
+            "notifications_queued": notification_count,
+            "skipped": skipped_count,
+            "total_pending": pending_orders.count(),
+            "threshold_minutes": threshold_minutes,
+        }
+        
+    except Exception as exc:
+        logger.error(f"Error checking pending orders: {exc}", exc_info=True)
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1))
 

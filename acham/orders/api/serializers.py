@@ -93,6 +93,7 @@ class OrderSummarySerializer(serializers.ModelSerializer):
     preview_images = serializers.SerializerMethodField()
     shipping_amount_usd = serializers.SerializerMethodField()
     shipping_amount_uzs = serializers.SerializerMethodField()
+    email_subscription = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -112,6 +113,7 @@ class OrderSummarySerializer(serializers.ModelSerializer):
             "preview_images",
             "shipping_amount_usd",
             "shipping_amount_uzs",
+            "email_subscription",
         )
 
     def get_status_display(self, obj: Order) -> str:
@@ -119,6 +121,7 @@ class OrderSummarySerializer(serializers.ModelSerializer):
 
     def get_preview_images(self, obj: Order) -> List[str]:
         images: List[str] = []
+        # Используем prefetch_related данные - items уже загружены
         for item in obj.items.all():
             image = OrderItemSerializer.resolve_preview_image(item)
             if image:
@@ -129,6 +132,13 @@ class OrderSummarySerializer(serializers.ModelSerializer):
     
     def get_shipping_amount_usd(self, obj: Order) -> str:
         """Get delivery fee in USD."""
+        # Используем данные из контекста, если доступны
+        delivery_fees = self.context.get("delivery_fees", {})
+        if "USD" in delivery_fees:
+            fee_usd = delivery_fees["USD"]
+            return str(fee_usd.amount)
+        
+        # Fallback к запросу (для обратной совместимости)
         from acham.orders.models import DeliveryFee
         try:
             fee_usd = DeliveryFee.objects.get(currency="USD", is_active=True)
@@ -138,15 +148,32 @@ class OrderSummarySerializer(serializers.ModelSerializer):
     
     def get_shipping_amount_uzs(self, obj: Order) -> str:
         """Get delivery fee in UZS."""
+        # Используем данные из контекста, если доступны
+        delivery_fees = self.context.get("delivery_fees", {})
+        if "UZS" in delivery_fees:
+            fee_uzs = delivery_fees["UZS"]
+            # Если есть amount_uzs, используем его, иначе amount
+            if fee_uzs.amount_uzs is not None:
+                return str(fee_uzs.amount_uzs)
+            return str(fee_uzs.amount)
+        
+        # Fallback к запросу (для обратной совместимости)
         from acham.orders.models import DeliveryFee
         try:
             fee_uzs = DeliveryFee.objects.get(currency="UZS", is_active=True)
-            # Если есть amount_uzs, используем его, иначе amount
             if fee_uzs.amount_uzs is not None:
                 return str(fee_uzs.amount_uzs)
             return str(fee_uzs.amount)
         except DeliveryFee.DoesNotExist:
             return "0"
+    
+    def get_email_subscription(self, obj: Order) -> dict:
+        """Get email subscription information."""
+        is_subscribed = bool(obj.customer_email)
+        return {
+            "is_subscribed": is_subscribed,
+            "email": obj.customer_email if is_subscribed else None,
+        }
 
 
 class OrderDetailSerializer(OrderSummarySerializer):
@@ -436,3 +463,19 @@ class OrderEmailSubscriptionSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError(_("Email is required."))
         return value.lower().strip()
+
+
+class OrderEmailSubscriptionUpdateSerializer(serializers.Serializer):
+    """Serializer for updating order email subscription."""
+    
+    email = serializers.EmailField(required=False)
+    language = serializers.ChoiceField(
+        choices=[("uz", "Uzbek"), ("ru", "Russian"), ("en", "English")],
+        required=False,
+    )
+
+    def validate_email(self, value):
+        """Validate email format."""
+        if value:
+            return value.lower().strip()
+        return value
