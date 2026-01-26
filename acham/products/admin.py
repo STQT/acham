@@ -144,6 +144,7 @@ class CollectionAdmin(TranslationAdmin):
     list_display = [
         'name',
         'image',
+        'mobile_image',
         'slug',
         'is_active',
         'is_new_arrival',
@@ -169,7 +170,7 @@ class CollectionAdmin(TranslationAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'slug', 'image', 'video')
+            'fields': ('name', 'slug', 'image', 'mobile_image', 'video')
         }),
         ('Settings', {
             'fields': ('is_active', 'is_new_arrival', 'is_featured_banner')

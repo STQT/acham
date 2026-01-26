@@ -22,6 +22,14 @@ class Collection(models.Model):
         null=True
     )
     
+    mobile_image = models.ImageField(
+        upload_to='collections/mobile/',
+        verbose_name=_("Mobile Image"),
+        help_text=_("Image of the collection for mobile version"),
+        blank=True,
+        null=True
+    )
+    
     video = models.FileField(
         upload_to='collections/videos/',
         verbose_name=_("Video"),
@@ -76,6 +84,8 @@ class Collection(models.Model):
     def save(self, *args, **kwargs):
         if self.image and getattr(self.image, "_file", None):
             optimize_image(self.image, force=False)
+        if self.mobile_image and getattr(self.mobile_image, "_file", None):
+            optimize_image(self.mobile_image, force=False)
         super().save(*args, **kwargs)
 
 
