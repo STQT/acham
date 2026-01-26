@@ -357,7 +357,7 @@ class OrderCreateSerializer(serializers.Serializer):
                 subtotal += line_total
                 total_items += item.quantity
 
-                preview = None
+                preview = ""
                 primary_shot = product.shots.filter(is_primary=True).first()
                 if primary_shot and getattr(primary_shot.image, "url", None):
                     preview = primary_shot.image.url
@@ -372,7 +372,7 @@ class OrderCreateSerializer(serializers.Serializer):
                     product_type=product.type,
                     color=product.color,
                     size=product.size,
-                    preview_image=preview,
+                    preview_image=preview or "",
                     unit_price=unit_price,
                     quantity=item.quantity,
                     total_price=line_total,
