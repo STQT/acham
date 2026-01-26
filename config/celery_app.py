@@ -34,8 +34,4 @@ app.conf.beat_schedule = {
         "task": "acham.orders.tasks.update_currency_rates",
         "schedule": crontab(hour=9, minute=0),  # Run daily at 9:00 AM Tashkent time
     },
-    "check-pending-orders": {
-        "task": "acham.orders.tasks.check_pending_orders",
-        "schedule": crontab(minute="*/30"),  # Run every 30 minutes
-    },
 }
