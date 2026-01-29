@@ -87,14 +87,14 @@ def send_status_update_notification(sender, instance, created, **kwargs):
             return
 
         # Send Telegram notification for other status updates
-        try:
-            send_order_telegram_notification.delay(instance.pk, message_type="status_update")
-            logger.info(
-                f"Queued Telegram status update notification for order {instance.number} "
-                f"({old_status} → {new_status})"
-            )
-        except Exception as exc:
-            logger.error(
-                f"Failed to queue Telegram status update notification for order {instance.number}: {exc}",
-                exc_info=True,
-            )
+        # try:
+        #     send_order_telegram_notification.delay(instance.pk, message_type="status_update")
+        #     logger.info(
+        #         f"Queued Telegram status update notification for order {instance.number} "
+        #         f"({old_status} → {new_status})"
+        #     )
+        # except Exception as exc:
+        #     logger.error(
+        #         f"Failed to queue Telegram status update notification for order {instance.number}: {exc}",
+        #         exc_info=True,
+        #     )
