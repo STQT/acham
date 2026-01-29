@@ -85,7 +85,7 @@ class PaymentInitiateView(APIView):
                 "nds": 1,  # VAT rate (1 = 12%)
             }
             basket.append(basket_item)
-        
+
         # Add delivery fee to basket
         # Get delivery fee in original currency (will be converted later if needed)
         delivery_fee_amount = order.shipping_amount
