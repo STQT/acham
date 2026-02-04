@@ -111,15 +111,62 @@ class TelegramBotClient:
         else:
             items_text = "  (нет товаров)"
         
+        # Получаем адрес доставки
+        shipping_address = order.addresses.filter(address_type='shipping').first()
+        
+        # Формируем адрес
+        address_parts = []
+        if shipping_address:
+            if shipping_address.address_line1:
+                address_parts.append(shipping_address.address_line1)
+            if shipping_address.address_line2:
+                address_parts.append(shipping_address.address_line2)
+            if shipping_address.city:
+                address_parts.append(shipping_address.city)
+            if shipping_address.region:
+                address_parts.append(shipping_address.region)
+            if shipping_address.postal_code:
+                address_parts.append(shipping_address.postal_code)
+            if shipping_address.country:
+                address_parts.append(shipping_address.country)
+        
+        address_text = ", ".join(address_parts) if address_parts else "Адрес не указан"
+        
+        # Получаем имя пользователя
+        user_name = None
+        if shipping_address:
+            # Сначала пробуем из адреса доставки
+            if shipping_address.first_name or shipping_address.last_name:
+                name_parts = []
+                if shipping_address.first_name:
+                    name_parts.append(shipping_address.first_name)
+                if shipping_address.last_name:
+                    name_parts.append(shipping_address.last_name)
+                user_name = " ".join(name_parts)
+        if not user_name and order.user:
+            # Если нет в адресе, берем из пользователя
+            user_name = order.user.name
+        
+        user_name_text = user_name if user_name else "Имя не указано"
+        
+        # Получаем номер телефона
+        phone = order.customer_phone
+        if not phone and shipping_address:
+            phone = shipping_address.phone
+        if not phone and order.user:
+            phone = order.user.phone
+        
+        phone_text = phone if phone else "Не указан"
+        
         customer_info = []
+        customer_info.append(f"👤 Имя: {user_name_text}")
+        customer_info.append(f"📱 Телефон: {phone_text}")
         if order.customer_email:
             customer_info.append(f"📧 Email: {order.customer_email}")
-        if order.customer_phone:
-            customer_info.append(f"📱 Phone: {order.customer_phone}")
         if order.user:
-            customer_info.append(f"👤 User ID: {order.user.id}")
+            customer_info.append(f"🆔 User ID: {order.user.id}")
         
-        customer_text = "\n".join(customer_info) if customer_info else "No contact info"
+        customer_text = "\n".join(customer_info)
         
         return f"""
 🛍️ <b>Новый заказ #{order.number}</b>
@@ -129,6 +176,9 @@ class TelegramBotClient:
 📊 Статус: {order.get_status_display()}
 
 {customer_text}
+
+📍 <b>Адрес доставки:</b>
+{address_text}
 
 📋 <b>Товары:</b>
 {items_text}

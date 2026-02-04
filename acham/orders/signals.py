@@ -71,11 +71,26 @@ def send_status_update_notification(sender, instance, created, **kwargs):
         # Telegram notifications:
         # - Do NOT notify when status becomes PENDING_PAYMENT
         # - Send the "new order" message when status becomes PAYMENT_CONFIRMED
+        #   ONLY if there is a successful payment transaction
         # - For other statuses keep status_update notifications
         if new_status == OrderStatus.PENDING_PAYMENT:
             return
 
         if new_status == OrderStatus.PAYMENT_CONFIRMED:
+            # Проверяем наличие успешной транзакции оплаты
+            from acham.orders.models import PaymentTransaction
+            has_successful_payment = PaymentTransaction.objects.filter(
+                order=instance,
+                status=PaymentTransaction.Status.SUCCESS
+            ).exists()
+            
+            if not has_successful_payment:
+                logger.warning(
+                    f"Order {instance.number} has PAYMENT_CONFIRMED status but no successful payment transaction. "
+                    f"Skipping Telegram notification."
+                )
+                return
+            
             try:
                 send_order_telegram_notification.delay(instance.pk, message_type="new")
                 logger.info(f"Queued Telegram notification for PAID order {instance.number}")

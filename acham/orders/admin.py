@@ -50,6 +50,8 @@ class OrderAdmin(admin.ModelAdmin):
         elif status == OrderStatus.DELIVERED:
             # Успешно - зеленый
             color = "green"
+        elif status == OrderStatus.FULFILLMENT:
+            color = "#2196F3"
         elif status == OrderStatus.PENDING_PAYMENT:
             color = "#FFC107"
         elif status == OrderStatus.PAYMENT_CONFIRMED:
