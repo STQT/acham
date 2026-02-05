@@ -933,6 +933,10 @@ def payment_notify(request):
             if not payment_transaction.octo_payment_id and transaction_id:
                 payment_transaction.octo_payment_id = transaction_id
 
+            # ВАЖНО: Сохраняем транзакцию ДО сохранения заказа, чтобы сигнал мог найти успешную транзакцию
+            payment_transaction.save()
+            logger.info(f"Payment transaction saved with new status: {payment_transaction.status}")
+
             # Update order status (order variable already set above during amount conversion)
             old_order_status = order.status
             logger.info(f"Order status update: {old_order_status} -> PAYMENT_CONFIRMED")
@@ -984,6 +988,10 @@ def payment_notify(request):
             logger.info(f"  - Error code: {error_code}")
             logger.info(f"  - Error message: {payment_transaction.error_message}")
 
+            # ВАЖНО: Сохраняем транзакцию ДО сохранения заказа
+            payment_transaction.save()
+            logger.info(f"Payment transaction saved with new status: {payment_transaction.status}")
+
             # Update order status (both canceled and failed payments mean order payment failed)
             order = payment_transaction.order
             old_order_status = order.status
@@ -1008,9 +1016,9 @@ def payment_notify(request):
         else:
             logger.warning(f"Unknown payment status: {payment_status}, error_code: {error_code}")
             logger.warning(f"Payload: {payload}")
-
-        payment_transaction.save()
-        logger.info(f"Payment transaction saved with new status: {payment_transaction.status}")
+            # Сохраняем транзакцию даже для неизвестного статуса
+            payment_transaction.save()
+            logger.info(f"Payment transaction saved with new status: {payment_transaction.status}")
 
     logger.info("=" * 80)
     logger.info("OCTO WEBHOOK PROCESSING COMPLETED")
