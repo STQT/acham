@@ -46,10 +46,16 @@ class OrderAdmin(admin.ModelAdmin):
             OrderStatus.PAYMENT_FAILED,
         ]:
             # Отклонен - красный
-            color = "red"
+            color = "#D32F2F"
         elif status == OrderStatus.DELIVERED:
             # Успешно - зеленый
             color = "green"
+        elif status == OrderStatus.FULFILLMENT:
+            color = "#2196F3"
+        elif status == OrderStatus.PENDING_PAYMENT:
+            color = "#FFC107"
+        elif status == OrderStatus.PAYMENT_CONFIRMED:
+            color = "#2E7D32"
         else:
             # В процессе - желтый
             color = "yellow"
