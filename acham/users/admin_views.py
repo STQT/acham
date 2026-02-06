@@ -5,7 +5,6 @@ from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -163,7 +162,7 @@ def admin_login_with_otp(request: HttpRequest) -> HttpResponse:
                 logger.error(f"Failed to create OTP for admin login: {exc}", exc_info=True)
                 messages.error(request, _('Failed to send OTP code. Please try again or contact administrator.'))
         
-            return render(request, 'admin/admin_login.html', {
-                'form': form,
-                'title': _('Admin Login'),
-            })
+        return render(request, 'admin/admin_login.html', {
+            'form': form,
+            'title': _('Admin Login'),
+        })

@@ -82,7 +82,7 @@ class AdminOTPForm(forms.Form):
         help_text=_("Enter the 6-digit code sent to Telegram"),
     )
 
-    def __init__(self, session_key=None, *args, **kwargs):
+    def __init__(self, *args, session_key=None, **kwargs):
         self.session_key = session_key
         super().__init__(*args, **kwargs)
 
