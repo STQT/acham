@@ -1,6 +1,8 @@
 import csv
 from django.contrib import admin
 from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.urls import reverse
 from modeltranslation.admin import TranslationAdmin
 from .models import FAQ, StaticPage, ContactMessage, ReturnRequest, EmailSubscription, AboutPageSection
 from django.utils.translation import gettext_lazy as _
@@ -238,35 +240,25 @@ class EmailSubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(AboutPageSection)
 class AboutPageSectionAdmin(TranslationAdmin):
-    """Admin configuration for AboutPageSection model with translation support."""
+    """Admin configuration for AboutPageSection singleton model with translation support."""
 
-    list_display = [
-        'section_type',
-        'title',
-        'is_active',
-        'order',
-        'created_at',
-        'updated_at'
-    ]
+    def changelist_view(self, request, extra_context=None):
+        """Redirect to the singleton instance edit form."""
+        instance = AboutPageSection.get_instance()
+        return redirect(reverse('admin:banner_aboutpagesection_change', args=[instance.pk]))
 
-    list_filter = [
-        'section_type',
-        'is_active',
-        'created_at'
-    ]
+    def has_add_permission(self, request):
+        """Disable adding new instances (singleton pattern)."""
+        return False
 
-    search_fields = [
-        'title',
-        'content',
-        'founder_name'
-    ]
+    def has_delete_permission(self, request, obj=None):
+        """Disable deleting the singleton instance."""
+        return False
 
     fieldsets = (
         (_("Basic Information"), {
             "fields": (
-                "section_type",
                 "is_active",
-                "order",
             )
         }),
         (_("Hero Section"), {
@@ -275,40 +267,47 @@ class AboutPageSectionAdmin(TranslationAdmin):
                 "founder_title",
                 "hero_image",
             ),
-            "classes": ("collapse",),
         }),
-        (_("Content"), {
+        (_("History Section"), {
             "fields": (
-                "title",
-                "content",
-                "image",
-            )
-        }),
-        (_("Additional Images (for Fabrics section)"), {
-            "fields": (
-                "image_2",
-                "image_3",
+                "history_title",
+                "history_content",
+                "history_image",
             ),
-            "classes": ("collapse",),
+        }),
+        (_("Philosophy Section"), {
+            "fields": (
+                "philosophy_title",
+                "philosophy_content",
+                "philosophy_image",
+            ),
+        }),
+        (_("Fabrics Section"), {
+            "fields": (
+                "fabrics_title",
+                "fabrics_content",
+                "fabrics_image",
+                "fabrics_image_2",
+                "fabrics_image_3",
+            ),
         }),
         (_("Process Section"), {
             "fields": (
+                "process_title",
                 "process_description",
                 "process_items",
             ),
-            "classes": ("collapse",),
         }),
         (_("Timeline"), {
             "fields": (
                 "created_at",
                 "updated_at",
-            )
+            ),
+            "classes": ("collapse",),
         }),
     )
 
     readonly_fields = ['created_at', 'updated_at']
-
-    ordering = ['order', 'section_type']
 
     # TranslationAdmin automatically handles language tabs
     class Media:

@@ -24,5 +24,4 @@ urlpatterns = [
     # About page endpoints
     path('about/', views.AboutPageView.as_view(), name='about-page'),
     path('about/sections/', views.AboutPageSectionListView.as_view(), name='about-sections-list'),
-    path('about/sections/<str:section_type>/', views.AboutPageSectionByTypeView.as_view(), name='about-section-by-type'),
 ]

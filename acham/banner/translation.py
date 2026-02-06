@@ -22,10 +22,20 @@ class StaticPageTranslationOptions(TranslationOptions):
 @register(AboutPageSection)
 class AboutPageSectionTranslationOptions(TranslationOptions):
     fields = (
+        # Hero section
         "founder_name",
         "founder_title",
-        "title",
-        "content",
+        # History section
+        "history_title",
+        "history_content",
+        # Philosophy section
+        "philosophy_title",
+        "philosophy_content",
+        # Fabrics section
+        "fabrics_title",
+        "fabrics_content",
+        # Process section
+        "process_title",
         "process_description",
     )
 

@@ -204,22 +204,7 @@ class EmailSubscription(models.Model):
 
 
 class AboutPageSection(models.Model):
-    """Model for About page sections that can be edited through admin."""
-    
-    class SectionType(models.TextChoices):
-        HERO = "hero", _("Hero Section")
-        HISTORY = "history", _("History")
-        PHILOSOPHY = "philosophy", _("Philosophy")
-        FABRICS = "fabrics", _("Used Fabrics")
-        PROCESS = "process", _("Process and Cost")
-    
-    section_type = models.CharField(
-        max_length=50,
-        choices=SectionType.choices,
-        unique=True,
-        verbose_name=_("Section Type"),
-        help_text=_("Type of section on the About page")
-    )
+    """Singleton model for About page content that can be edited through admin."""
     
     # Hero section fields
     founder_name = models.CharField(
@@ -242,50 +227,92 @@ class AboutPageSection(models.Model):
         help_text=_("Hero section image (founder photo)")
     )
     
-    # Common fields for all sections
-    title = models.CharField(
+    # History section fields
+    history_title = models.CharField(
         max_length=255,
         blank=True,
-        verbose_name=_("Title"),
-        help_text=_("Section title")
+        verbose_name=_("History Title"),
+        help_text=_("Title for history section")
     )
-    content = models.TextField(
+    history_content = models.TextField(
         blank=True,
-        verbose_name=_("Content"),
-        help_text=_("Section content text")
+        verbose_name=_("History Content"),
+        help_text=_("Content for history section")
     )
-    image = models.ImageField(
+    history_image = models.ImageField(
         upload_to='about_page/',
         blank=True,
         null=True,
-        verbose_name=_("Image"),
-        help_text=_("Section image")
+        verbose_name=_("History Image"),
+        help_text=_("Image for history section")
     )
     
-    # Additional images for fabrics section
-    image_2 = models.ImageField(
-        upload_to='about_page/',
+    # Philosophy section fields
+    philosophy_title = models.CharField(
+        max_length=255,
         blank=True,
-        null=True,
-        verbose_name=_("Image 2"),
-        help_text=_("Additional image (for fabrics section)")
+        verbose_name=_("Philosophy Title"),
+        help_text=_("Title for philosophy section")
     )
-    image_3 = models.ImageField(
+    philosophy_content = models.TextField(
+        blank=True,
+        verbose_name=_("Philosophy Content"),
+        help_text=_("Content for philosophy section")
+    )
+    philosophy_image = models.ImageField(
         upload_to='about_page/',
         blank=True,
         null=True,
-        verbose_name=_("Image 3"),
-        help_text=_("Additional image (for fabrics section)")
+        verbose_name=_("Philosophy Image"),
+        help_text=_("Image for philosophy section")
+    )
+    
+    # Fabrics section fields
+    fabrics_title = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Fabrics Title"),
+        help_text=_("Title for fabrics section")
+    )
+    fabrics_content = models.TextField(
+        blank=True,
+        verbose_name=_("Fabrics Content"),
+        help_text=_("Content for fabrics section")
+    )
+    fabrics_image = models.ImageField(
+        upload_to='about_page/',
+        blank=True,
+        null=True,
+        verbose_name=_("Fabrics Image"),
+        help_text=_("Main image for fabrics section")
+    )
+    fabrics_image_2 = models.ImageField(
+        upload_to='about_page/',
+        blank=True,
+        null=True,
+        verbose_name=_("Fabrics Image 2"),
+        help_text=_("Additional image for fabrics section")
+    )
+    fabrics_image_3 = models.ImageField(
+        upload_to='about_page/',
+        blank=True,
+        null=True,
+        verbose_name=_("Fabrics Image 3"),
+        help_text=_("Additional image for fabrics section")
     )
     
     # Process section fields
+    process_title = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Process Title"),
+        help_text=_("Title for process section")
+    )
     process_description = models.TextField(
         blank=True,
         verbose_name=_("Process Description"),
         help_text=_("Description for process section")
     )
-    
-    # Icons for process section (stored as JSON)
     process_items = models.JSONField(
         default=list,
         blank=True,
@@ -296,22 +323,30 @@ class AboutPageSection(models.Model):
     is_active = models.BooleanField(
         default=True,
         verbose_name=_("Is Active"),
-        help_text=_("Whether this section is displayed")
-    )
-    
-    order = models.PositiveIntegerField(
-        default=0,
-        verbose_name=_("Order"),
-        help_text=_("Display order on the page")
+        help_text=_("Whether the page is displayed")
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['order', 'section_type']
-        verbose_name = _("About Page Section")
-        verbose_name_plural = _("About Page Sections")
+        verbose_name = _("About Page")
+        verbose_name_plural = _("About Page")
     
     def __str__(self):
-        return f"{self.get_section_type_display()} - {self.title or 'No title'}"
+        return _("About Page Content")
+    
+    @classmethod
+    def get_instance(cls):
+        """Get or create the singleton instance."""
+        instance, created = cls.objects.get_or_create(pk=1)
+        return instance
+    
+    def save(self, *args, **kwargs):
+        """Ensure only one instance exists."""
+        self.pk = 1
+        super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        """Prevent deletion of singleton instance."""
+        pass

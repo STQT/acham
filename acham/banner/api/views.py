@@ -159,55 +159,76 @@ class EmailSubscriptionCreateView(generics.CreateAPIView):
 
 @extend_schema(
     tags=['about-page'],
-    summary="List all about page sections",
-    description="Retrieve a list of all active about page sections ordered by display order."
+    summary="Get about page data",
+    description="Retrieve the complete about page data (singleton model)."
 )
-class AboutPageSectionListView(generics.ListAPIView):
-    """List all active about page sections."""
-    queryset = AboutPageSection.objects.filter(is_active=True).order_by('order', 'section_type')
+class AboutPageSectionListView(generics.RetrieveAPIView):
+    """Get the singleton about page instance."""
     serializer_class = AboutPageSectionSerializer
-
-
-@extend_schema(
-    tags=['about-page'],
-    summary="Retrieve about page section by type",
-    description="Retrieve a specific about page section by its type (hero, history, philosophy, fabrics, process)."
-)
-class AboutPageSectionByTypeView(generics.RetrieveAPIView):
-    """Retrieve an about page section by its type."""
-    queryset = AboutPageSection.objects.filter(is_active=True)
-    serializer_class = AboutPageSectionSerializer
-    lookup_field = 'section_type'
-    lookup_url_kwarg = 'section_type'
+    
+    def get_object(self):
+        """Return the singleton instance."""
+        return AboutPageSection.get_instance()
 
 
 @extend_schema(
     tags=['about-page'],
     summary="Get complete about page data",
-    description="Retrieve all about page sections organized by type in a single response."
+    description="Retrieve all about page sections in a single response."
 )
 class AboutPageView(generics.GenericAPIView):
-    """Get complete about page data with all sections organized by type."""
+    """Get complete about page data with all sections."""
     serializer_class = AboutPageSectionSerializer
     
     def get(self, request, *args, **kwargs):
-        """Return all active sections organized by type."""
-        sections = AboutPageSection.objects.filter(is_active=True).order_by('order', 'section_type')
-        serializer = self.get_serializer(sections, many=True)
+        """Return the singleton instance with all sections."""
+        instance = AboutPageSection.get_instance()
         
-        # Organize sections by type for easier frontend consumption
+        if not instance.is_active:
+            return Response(
+                {'detail': 'About page is not active.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = self.get_serializer(instance)
+        
+        # Organize data by sections for easier frontend consumption
+        data = serializer.data
         organized_data = {
-            'hero': None,
-            'history': None,
-            'philosophy': None,
-            'fabrics': None,
-            'process': None,
-            'sections': serializer.data
+            'hero': {
+                'founder_name': data.get('founder_name'),
+                'founder_title': data.get('founder_title'),
+                'hero_image': data.get('hero_image'),
+                'hero_image_url': data.get('hero_image_url'),
+            },
+            'history': {
+                'title': data.get('history_title'),
+                'content': data.get('history_content'),
+                'image': data.get('history_image'),
+                'image_url': data.get('history_image_url'),
+            },
+            'philosophy': {
+                'title': data.get('philosophy_title'),
+                'content': data.get('philosophy_content'),
+                'image': data.get('philosophy_image'),
+                'image_url': data.get('philosophy_image_url'),
+            },
+            'fabrics': {
+                'title': data.get('fabrics_title'),
+                'content': data.get('fabrics_content'),
+                'image': data.get('fabrics_image'),
+                'image_url': data.get('fabrics_image_url'),
+                'image_2': data.get('fabrics_image_2'),
+                'image_2_url': data.get('fabrics_image_2_url'),
+                'image_3': data.get('fabrics_image_3'),
+                'image_3_url': data.get('fabrics_image_3_url'),
+            },
+            'process': {
+                'title': data.get('process_title'),
+                'description': data.get('process_description'),
+                'items': data.get('process_items'),
+            },
+            'is_active': data.get('is_active'),
         }
-        
-        for section_data in serializer.data:
-            section_type = section_data.get('section_type')
-            if section_type in organized_data:
-                organized_data[section_type] = section_data
         
         return Response(organized_data, status=status.HTTP_200_OK)

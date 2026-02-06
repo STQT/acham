@@ -96,33 +96,56 @@ class EmailSubscriptionSerializer(serializers.ModelSerializer):
 
 
 class AboutPageSectionSerializer(serializers.ModelSerializer):
-    """Serializer for AboutPageSection model."""
+    """Serializer for AboutPageSection singleton model."""
+    
+    # Hero section image URLs
     hero_image_url = serializers.SerializerMethodField()
-    image_url = serializers.SerializerMethodField()
-    image_2_url = serializers.SerializerMethodField()
-    image_3_url = serializers.SerializerMethodField()
+    
+    # History section image URLs
+    history_image_url = serializers.SerializerMethodField()
+    
+    # Philosophy section image URLs
+    philosophy_image_url = serializers.SerializerMethodField()
+    
+    # Fabrics section image URLs
+    fabrics_image_url = serializers.SerializerMethodField()
+    fabrics_image_2_url = serializers.SerializerMethodField()
+    fabrics_image_3_url = serializers.SerializerMethodField()
     
     class Meta:
         model = AboutPageSection
         fields = [
             'id',
-            'section_type',
+            # Hero section
             'founder_name',
             'founder_title',
             'hero_image',
             'hero_image_url',
-            'title',
-            'content',
-            'image',
-            'image_url',
-            'image_2',
-            'image_2_url',
-            'image_3',
-            'image_3_url',
+            # History section
+            'history_title',
+            'history_content',
+            'history_image',
+            'history_image_url',
+            # Philosophy section
+            'philosophy_title',
+            'philosophy_content',
+            'philosophy_image',
+            'philosophy_image_url',
+            # Fabrics section
+            'fabrics_title',
+            'fabrics_content',
+            'fabrics_image',
+            'fabrics_image_url',
+            'fabrics_image_2',
+            'fabrics_image_2_url',
+            'fabrics_image_3',
+            'fabrics_image_3_url',
+            # Process section
+            'process_title',
             'process_description',
             'process_items',
+            # Common fields
             'is_active',
-            'order',
             'created_at',
             'updated_at'
         ]
@@ -131,9 +154,11 @@ class AboutPageSectionSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'hero_image_url',
-            'image_url',
-            'image_2_url',
-            'image_3_url'
+            'history_image_url',
+            'philosophy_image_url',
+            'fabrics_image_url',
+            'fabrics_image_2_url',
+            'fabrics_image_3_url'
         ]
     
     def get_hero_image_url(self, obj):
@@ -145,30 +170,48 @@ class AboutPageSectionSerializer(serializers.ModelSerializer):
             return obj.hero_image.url
         return None
     
-    def get_image_url(self, obj):
-        """Get the full URL for the image."""
-        if obj.image:
+    def get_history_image_url(self, obj):
+        """Get the full URL for the history image."""
+        if obj.history_image:
             request = self.context.get('request')
             if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
+                return request.build_absolute_uri(obj.history_image.url)
+            return obj.history_image.url
         return None
     
-    def get_image_2_url(self, obj):
-        """Get the full URL for image_2."""
-        if obj.image_2:
+    def get_philosophy_image_url(self, obj):
+        """Get the full URL for the philosophy image."""
+        if obj.philosophy_image:
             request = self.context.get('request')
             if request:
-                return request.build_absolute_uri(obj.image_2.url)
-            return obj.image_2.url
+                return request.build_absolute_uri(obj.philosophy_image.url)
+            return obj.philosophy_image.url
         return None
     
-    def get_image_3_url(self, obj):
-        """Get the full URL for image_3."""
-        if obj.image_3:
+    def get_fabrics_image_url(self, obj):
+        """Get the full URL for fabrics image."""
+        if obj.fabrics_image:
             request = self.context.get('request')
             if request:
-                return request.build_absolute_uri(obj.image_3.url)
-            return obj.image_3.url
+                return request.build_absolute_uri(obj.fabrics_image.url)
+            return obj.fabrics_image.url
+        return None
+    
+    def get_fabrics_image_2_url(self, obj):
+        """Get the full URL for fabrics image_2."""
+        if obj.fabrics_image_2:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.fabrics_image_2.url)
+            return obj.fabrics_image_2.url
+        return None
+    
+    def get_fabrics_image_3_url(self, obj):
+        """Get the full URL for fabrics image_3."""
+        if obj.fabrics_image_3:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.fabrics_image_3.url)
+            return obj.fabrics_image_3.url
         return None
 
