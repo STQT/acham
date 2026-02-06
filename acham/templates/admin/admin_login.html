@@ -1,0 +1,67 @@
+{% extends "admin/login.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+.login-form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.help-text {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="login-form">
+        {% if messages %}
+            <ul class="messagelist">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        
+        <form action="{% url 'admin:login' %}" method="post" id="login-form">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="errornote">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+            
+            <div class="form-row">
+                {{ form.email.errors }}
+                <label for="{{ form.email.id_for_label }}" class="required">{% trans 'Email' %}:</label>
+                {{ form.email }}
+            </div>
+            
+            <div class="form-row">
+                {{ form.password.errors }}
+                <label for="{{ form.password.id_for_label }}" class="required">{% trans 'Password' %}:</label>
+                {{ form.password }}
+            </div>
+            
+            <div class="form-row">
+                {{ form.remember_me }}
+                <label for="{{ form.remember_me.id_for_label }}">{% trans 'Remember me' %}</label>
+            </div>
+            
+            <div class="submit-row">
+                <input type="submit" value="{% trans 'Log in' %}" />
+            </div>
+        </form>
+        
+        <p class="help-text">
+            {% trans 'After entering your credentials, you will receive an OTP code via Telegram.' %}
+        </p>
+    </div>
+</div>
+{% endblock %}

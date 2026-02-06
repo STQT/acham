@@ -1,0 +1,92 @@
+{% extends "admin/login.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+.login-form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.help-text {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="login-form">
+        <h1>{% trans 'OTP Verification' %}</h1>
+        
+        <p class="help-text">
+            {% trans 'Please check your Telegram group for the OTP code and enter it below.' %}
+        </p>
+        
+        {% if messages %}
+            <ul class="messagelist">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        
+        <form action="{% url 'admin:login' %}" method="post" id="otp-form">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="errornote">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+            
+            <div class="form-row">
+                {{ form.otp_code.errors }}
+                <label for="{{ form.otp_code.id_for_label }}" class="required">{% trans 'OTP Code' %}:</label>
+                {{ form.otp_code }}
+                {% if form.otp_code.help_text %}
+                    <p class="help">{{ form.otp_code.help_text }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="submit-row">
+                <input type="submit" value="{% trans 'Verify' %}" />
+                <a href="{% url 'admin:login' %}" class="button">{% trans 'Back to login' %}</a>
+            </div>
+        </form>
+        
+        <p class="help-text">
+            {% trans 'The code is valid for 10 minutes. If you did not receive the code, please try logging in again.' %}
+        </p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const otpInput = document.getElementById('{{ form.otp_code.id_for_label }}');
+    if (otpInput) {
+        otpInput.addEventListener('input', function(e) {
+            // Remove any non-digit characters
+            e.target.value = e.target.value.replace(/\D/g, '');
+            // Limit to 6 digits
+            if (e.target.value.length > 6) {
+                e.target.value = e.target.value.slice(0, 6);
+            }
+        });
+        
+        // Auto-submit when 6 digits are entered
+        otpInput.addEventListener('input', function(e) {
+            if (e.target.value.length === 6) {
+                // Small delay to ensure the value is set
+                setTimeout(function() {
+                    document.getElementById('otp-form').submit();
+                }, 100);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

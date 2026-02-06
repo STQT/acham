@@ -1,4 +1,3 @@
-
 from typing import ClassVar
 
 from django.contrib.auth.models import AbstractUser
@@ -153,3 +152,45 @@ class PasswordResetToken(models.Model):
     def is_valid(self) -> bool:
         """Check if token is valid (not used, not expired, and active)."""
         return self.is_active and not self.used_at and not self.is_expired()
+
+
+class AdminOTP(models.Model):
+    """Stores OTP codes for admin two-factor authentication."""
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="admin_otps",
+        verbose_name=_("User")
+    )
+    code = models.CharField(_("OTP Code"), max_length=6, db_index=True)
+    session_key = models.CharField(_("Session Key"), max_length=40, db_index=True)
+    expires_at = models.DateTimeField(_("Expires at"), db_index=True)
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    verified_at = models.DateTimeField(_("Verified at"), blank=True, null=True)
+    attempts = models.PositiveSmallIntegerField(_("Attempts"), default=0)
+    is_active = models.BooleanField(_("Is active"), default=True)
+    ip_address = models.GenericIPAddressField(_("IP Address"), null=True, blank=True)
+    user_agent = models.CharField(_("User Agent"), max_length=255, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["session_key", "is_active"]),
+            models.Index(fields=["expires_at"]),
+            models.Index(fields=["user", "is_active"]),
+        ]
+        verbose_name = _("Admin OTP")
+        verbose_name_plural = _("Admin OTPs")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Admin OTP for {self.user.email or self.user.name}"
+
+    def is_expired(self) -> bool:
+        """Check if OTP is expired."""
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+    def is_valid(self) -> bool:
+        """Check if OTP is valid (not verified, not expired, and active)."""
+        return self.is_active and not self.verified_at and not self.is_expired()

@@ -1,4 +1,6 @@
+import csv
 from django.contrib import admin
+from django.http import HttpResponse
 from modeltranslation.admin import TranslationAdmin
 from .models import FAQ, StaticPage, ContactMessage, ReturnRequest, EmailSubscription, AboutPageSection
 from django.utils.translation import gettext_lazy as _
@@ -183,6 +185,55 @@ class EmailSubscriptionAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
 
     ordering = ['-created_at']
+    
+    actions = ['export_emails_csv', 'export_all_emails_csv']
+    
+    def export_emails_csv(self, request, queryset):
+        """Экспорт выбранных email в CSV."""
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="email_subscriptions.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Email', 'Language', 'Is Active', 'Created At', 'Updated At'])
+        
+        for subscription in queryset:
+            writer.writerow([
+                subscription.email,
+                subscription.get_language_display(),
+                'Yes' if subscription.is_active else 'No',
+                subscription.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                subscription.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+            ])
+        
+        self.message_user(request, f'Экспортировано {queryset.count()} email адресов.')
+        return response
+    
+    export_emails_csv.short_description = "Экспортировать выбранные email в CSV"
+    
+    def export_all_emails_csv(self, request, queryset):
+        """Экспорт всех email в CSV."""
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="all_email_subscriptions.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Email', 'Language', 'Is Active', 'Created At', 'Updated At'])
+        
+        all_subscriptions = EmailSubscription.objects.all()
+        count = 0
+        for subscription in all_subscriptions:
+            writer.writerow([
+                subscription.email,
+                subscription.get_language_display(),
+                'Yes' if subscription.is_active else 'No',
+                subscription.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                subscription.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+            ])
+            count += 1
+        
+        self.message_user(request, f'Экспортировано {count} email адресов.')
+        return response
+    
+    export_all_emails_csv.short_description = "Экспортировать ВСЕ email в CSV"
 
 
 @admin.register(AboutPageSection)

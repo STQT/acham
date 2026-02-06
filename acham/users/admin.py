@@ -11,14 +11,19 @@ from django.utils.decorators import method_decorator
 
 from .forms import UserAdminChangeForm
 from .forms import UserAdminCreationForm
-from .models import User, PasswordResetToken
+from .models import User, PasswordResetToken, AdminOTP
 from .tasks import send_bulk_email
+from .admin_views import admin_login_with_otp
+
+# Override admin login with custom OTP-based login
+admin.site.login = admin_login_with_otp  # type: ignore[method-assign]
 
 if settings.DJANGO_ADMIN_FORCE_ALLAUTH:
     # Force the `admin` sign in process to go through the `django-allauth` workflow:
     # https://docs.allauth.org/en/latest/common/admin.html#admin
     admin.autodiscover()
-    admin.site.login = secure_admin_login(admin.site.login)  # type: ignore[method-assign]
+    # Note: We override allauth's secure_admin_login with our OTP login
+    admin.site.login = admin_login_with_otp  # type: ignore[method-assign]
 
 
 @admin.register(User)
@@ -158,4 +163,38 @@ class PasswordResetTokenAdmin(admin.ModelAdmin):
     
     def has_add_permission(self, request):
         """Disable manual creation of tokens."""
+        return False
+
+
+@admin.register(AdminOTP)
+class AdminOTPAdmin(admin.ModelAdmin):
+    """Admin configuration for AdminOTP model."""
+    
+    list_display = ("user", "code", "is_active", "verified_at", "attempts", "expires_at", "created_at", "ip_address")
+    list_filter = ("is_active", "verified_at", "created_at", "expires_at")
+    search_fields = ("user__email", "user__name", "code", "session_key")
+    readonly_fields = ("code", "session_key", "created_at", "verified_at", "ip_address", "user_agent")
+    ordering = ("-created_at",)
+    
+    fieldsets = (
+        (_("OTP Information"), {
+            "fields": ("user", "code", "session_key", "is_active")
+        }),
+        (_("Verification"), {
+            "fields": ("verified_at", "attempts")
+        }),
+        (_("Request Details"), {
+            "fields": ("ip_address", "user_agent")
+        }),
+        (_("Timeline"), {
+            "fields": ("created_at", "expires_at")
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        """Disable manual creation of OTP codes."""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Disable editing of OTP codes."""
         return False

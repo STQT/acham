@@ -14,10 +14,21 @@ from .models import (
 )
 
 
-class OrderItemInline(admin.TabularInline):
+class OrderItemInline(admin.StackedInline):
     model = OrderItem
     extra = 0
-    readonly_fields = ("product", "product_name", "unit_price", "quantity", "total_price")
+    readonly_fields = ("product", "product_name", "unit_price", "quantity", "total_price", "preview_image_display", "preview_image")
+    
+    def preview_image_display(self, obj):
+        """Отображает изображение товара вместо пути."""
+        if obj.preview_image:
+            return format_html(
+                '<img src="{}" width="100" height="100" style="object-fit: cover; border-radius: 4px;" />',
+                obj.preview_image,
+            )
+        return "—"
+    
+    preview_image_display.short_description = _("Preview Image")
 
 
 class OrderAddressInline(admin.StackedInline):
