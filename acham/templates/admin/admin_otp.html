@@ -54,7 +54,7 @@
             
             <div class="submit-row">
                 <input type="submit" value="{% trans 'Verify' %}" />
-                <a href="{% url 'admin:login' %}" class="button">{% trans 'Back to login' %}</a>
+                <a href="{% url 'admin:login' %}?back_to_login=1" class="button">{% trans 'Back to login' %}</a>
             </div>
         </form>
         

@@ -42,6 +42,12 @@ def admin_login_with_otp(request: HttpRequest) -> HttpResponse:
     
     # Handle GET request
     if request.method == 'GET':
+        # Check if user wants to go back to login (clear OTP session)
+        if request.GET.get('back_to_login'):
+            request.session.pop('admin_otp_session_key', None)
+            request.session.pop('admin_otp_user_id', None)
+            request.session.pop('admin_remember_me', None)
+        
         # Check if we're in OTP verification step
         session_key = request.session.get('admin_otp_session_key')
         user_id = request.session.get('admin_otp_user_id')
