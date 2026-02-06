@@ -334,7 +334,7 @@ class AboutPageSection(models.Model):
         verbose_name_plural = _("About Page")
     
     def __str__(self):
-        return _("About Page Content")
+        return str(_("About Page Content"))
     
     @classmethod
     def get_instance(cls):
