@@ -82,11 +82,14 @@ def admin_login_with_otp(request: HttpRequest) -> HttpResponse:
             if otp:
                 # OTP verified successfully
                 from acham.users.models import User
+                from django.conf import settings
                 try:
                     user = User.objects.get(pk=user_id)
                     
                     # Log the user in
-                    login(request, user)
+                    # Use the first authentication backend (ModelBackend) for admin login
+                    backend = settings.AUTHENTICATION_BACKENDS[0]
+                    login(request, user, backend=backend)
                     
                     # Clean up session
                     request.session.pop('admin_otp_session_key', None)
