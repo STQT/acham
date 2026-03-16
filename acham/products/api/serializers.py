@@ -29,7 +29,9 @@ class CollectionSerializer(serializers.ModelSerializer):
             'image',
             'mobile_image',
             'video',
-            'slug',
+            'slug_en',
+            'slug_ru',
+            'slug_uz',
             'is_active',
             'is_new_arrival',
             'is_featured_banner',
@@ -124,6 +126,9 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'collection',
+            'slug_en',
+            'slug_ru',
+            'slug_uz',
             'name',
             'size',
             'size_display',
@@ -218,6 +223,9 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'collection',
+            'slug_en',
+            'slug_ru',
+            'slug_uz',
             'name',
             'size',
             'size_display',
@@ -285,6 +293,9 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
+            'slug_en',
+            'slug_ru',
+            'slug_uz',
             'name',
             'size',
             'material',

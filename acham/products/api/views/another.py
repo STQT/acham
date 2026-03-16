@@ -3,9 +3,10 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
-from ..models import Product, ProductShot, Collection, UserFavorite, ProductShare, Cart, CartItem, ProductRelation
-from .serializers import (
+from acham.products.models import Product, ProductShot, Collection, UserFavorite, ProductShare, Cart, CartItem, ProductRelation
+from acham.products.api.serializers import (
     ProductSerializer,
     ProductListSerializer,
     ProductShotSerializer,
@@ -99,6 +100,33 @@ class ProductDetailView(generics.RetrieveAPIView):
     """
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+
+
+@extend_schema(
+    tags=["Products"],
+    summary="Get product details by slug",
+    description="Retrieve detailed information about a specific product using a multilingual slug. "
+                "Slug is resolved based on the current language (en/ru/uz).",
+)
+class ProductSlugDetailAPIView(generics.RetrieveAPIView):
+    """
+    Retrieve a product by its multilingual slug.
+    """
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+    def get_object(self):
+        slug = self.kwargs.get("slug")
+        # Determine current language (default to 'en')
+        language = getattr(self.request, "LANGUAGE_CODE", "en")
+        lang_to_field = {
+            "en": "slug_en",
+            "ru": "slug_ru",
+            "uz": "slug_uz",
+        }
+        slug_field = lang_to_field.get(language, "slug_en")
+        filter_kwargs = {slug_field: slug}
+        return get_object_or_404(self.get_queryset(), **filter_kwargs)
 
 
 @extend_schema(
@@ -332,6 +360,33 @@ class CollectionDetailView(generics.RetrieveAPIView):
         collection = self.get_object()
         context['collection'] = collection
         return context
+
+
+@extend_schema(
+    tags=["Collections"],
+    summary="Get collection details by slug",
+    description="Retrieve collection details using a multilingual slug. "
+                "Slug is resolved based on the current language (en/ru/uz).",
+    responses={200: CollectionSerializer}
+)
+class CollectionSlugDetailView(generics.RetrieveAPIView):
+    """
+    Retrieve a collection by its multilingual slug.
+    """
+    queryset = Collection.objects.all()
+    serializer_class = CollectionSerializer
+
+    def get_object(self):
+        slug = self.kwargs.get("slug")
+        language = getattr(self.request, "LANGUAGE_CODE", "en")
+        lang_to_field = {
+            "en": "slug_en",
+            "ru": "slug_ru",
+            "uz": "slug_uz",
+        }
+        slug_field = lang_to_field.get(language, "slug_en")
+        filter_kwargs = {slug_field: slug}
+        return get_object_or_404(self.get_queryset(), **filter_kwargs)
 
 
 class CollectionProductsView(generics.ListAPIView):

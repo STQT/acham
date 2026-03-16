@@ -1,12 +1,11 @@
 from django.urls import path
-from .views import *
-
-# app_name removed to prevent namespace collision
+from acham.products.api.views import *
 
 urlpatterns = [
     # 🛍️ PRODUCT MANAGEMENT
     path('', ProductListView.as_view(), name='product-list'),
     path('<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
+    path('by-slug/<slug:slug>/', ProductSlugDetailAPIView.as_view(), name='product-detail-slug'),
     path('<int:pk>/complete/', product_complete_details, name='product-complete-details'),
     path('search/', product_search, name='product-search'),
     path('types/', product_types, name='product-types'),
@@ -20,6 +19,7 @@ urlpatterns = [
     path('collections/', CollectionListView.as_view(), name='collection-list'),
     path('collections/featured/', featured_collection, name='collection-featured'),
     path('collections/<int:pk>/', CollectionDetailView.as_view(), name='collection-detail'),
+    path('collections/by-slug/<slug:slug>/', CollectionSlugDetailView.as_view(), name='collection-detail-slug'),
     path('collections/<int:collection_id>/products/', CollectionProductsView.as_view(), name='collection-products'),
     path('collections/<int:collection_id>/page/', collection_page, name='collection-page'),
     path('collections/search/', search_collections, name='search-collections'),

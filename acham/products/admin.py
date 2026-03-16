@@ -50,7 +50,7 @@ class ProductAdmin(TranslationAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'type', 'size', 'collection', 'color', 'material')
+            'fields': ('name', 'slug_ru', 'slug_en', 'slug_uz', 'type', 'size', 'collection', 'color', 'material')
         }),
         ('Descriptions', {
             'fields': ('short_description', 'detailed_description', 'care_instructions'),
@@ -64,6 +64,12 @@ class ProductAdmin(TranslationAdmin):
     inlines = [ProductShotInline]
     
     readonly_fields = ['created_at', 'updated_at']
+
+    prepopulated_fields = {
+        'slug_ru': ('name_ru',),
+        'slug_en': ('name',),
+        'slug_uz': ('name_uz',),
+    }
     
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object
@@ -145,7 +151,7 @@ class CollectionAdmin(TranslationAdmin):
         'name',
         'image',
         'mobile_image',
-        'slug',
+        'slug_en',
         'is_active',
         'is_new_arrival',
         'is_featured_banner',
@@ -161,16 +167,20 @@ class CollectionAdmin(TranslationAdmin):
 
     search_fields = [
         'name',
-        'slug'
+        'slug_ru',
+        'slug_en',
+        'slug_uz',
     ]
 
     prepopulated_fields = {
-        'slug': ('name',)
+        'slug_ru': ('name_ru',),
+        'slug_en': ('name',),
+        'slug_uz': ('name_uz',),
     }
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'slug', 'image', 'mobile_image', 'video')
+            'fields': ('name', 'slug_ru', 'slug_en', 'slug_uz', 'image', 'mobile_image', 'video')
         }),
         ('Settings', {
             'fields': ('is_active', 'is_new_arrival', 'is_featured_banner')

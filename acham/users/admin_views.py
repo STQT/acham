@@ -17,7 +17,13 @@ from acham.users.admin_forms import AdminLoginForm, AdminOTPForm
 from acham.users.services.admin_otp_service import AdminOTPService
 from acham.users.models import AdminOTP
 
+from django.conf import settings as django_settings
+
 logger = logging.getLogger(__name__)
+
+# Cache settings we need so we don't reference the django_settings name inside functions
+DEBUG_MODE = django_settings.DEBUG
+AUTH_BACKEND = django_settings.AUTHENTICATION_BACKENDS[0]
 
 
 @sensitive_post_parameters()
@@ -25,6 +31,35 @@ logger = logging.getLogger(__name__)
 @never_cache
 def admin_login_with_otp(request: HttpRequest) -> HttpResponse:
     """Custom admin login view with two-factor authentication via Telegram OTP."""
+
+    # In DEBUG mode we disable OTP and use a simple login flow
+    if DEBUG_MODE:
+        if request.method == 'GET':
+            form = AdminLoginForm()
+            return render(request, 'admin/admin_login.html', {
+                'form': form,
+                'title': _('Admin Login'),
+            })
+
+        form = AdminLoginForm(request, data=request.POST)
+
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user, backend=AUTH_BACKEND)
+
+            # Remember me support if present on the form
+            if getattr(form, 'cleaned_data', None) and form.cleaned_data.get('remember_me'):
+                request.session.set_expiry(1209600)  # 2 weeks
+            else:
+                request.session.set_expiry(0)  # Browser session
+
+            next_url = request.GET.get('next', reverse('admin:index'))
+            return redirect(next_url)
+
+        return render(request, 'admin/admin_login.html', {
+            'form': form,
+            'title': _('Admin Login'),
+        })
     
     # If user is already logged in and verified, redirect to admin
     if request.user.is_authenticated and request.user.is_staff:
@@ -88,14 +123,11 @@ def admin_login_with_otp(request: HttpRequest) -> HttpResponse:
             if otp:
                 # OTP verified successfully
                 from acham.users.models import User
-                from django.conf import settings
                 try:
                     user = User.objects.get(pk=user_id)
                     
-                    # Log the user in
-                    # Use the first authentication backend (ModelBackend) for admin login
-                    backend = settings.AUTHENTICATION_BACKENDS[0]
-                    login(request, user, backend=backend)
+                    # Log the user in using the cached backend
+                    login(request, user, backend=AUTH_BACKEND)
                     
                     # Clean up session
                     request.session.pop('admin_otp_session_key', None)

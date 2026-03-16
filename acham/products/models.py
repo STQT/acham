@@ -38,11 +38,29 @@ class Collection(models.Model):
         null=True
     )
 
-    slug = models.SlugField(
+    # Multilingual slugs for frontend routing
+    slug_en = models.SlugField(
         max_length=200,
-        unique=True,
-        verbose_name=_("Slug"),
-        help_text=_("URL-friendly version of the name")
+        blank=True,
+        null=True,
+        verbose_name=_("Slug (EN)"),
+        help_text=_("URL-friendly name for English pages")
+    )
+
+    slug_ru = models.SlugField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("Slug (RU)"),
+        help_text=_("URL-friendly name for Russian pages")
+    )
+
+    slug_uz = models.SlugField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("Slug (UZ)"),
+        help_text=_("URL-friendly name for Uzbek pages")
     )
     
     is_active = models.BooleanField(
@@ -121,6 +139,31 @@ class Product(models.Model):
         null=True
     )
     
+    # Multilingual slugs for product detail pages
+    slug_en = models.SlugField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("Slug (EN)"),
+        help_text=_("URL-friendly name for English product page")
+    )
+
+    slug_ru = models.SlugField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("Slug (RU)"),
+        help_text=_("URL-friendly name for Russian product page")
+    )
+
+    slug_uz = models.SlugField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("Slug (UZ)"),
+        help_text=_("URL-friendly name for Uzbek product page")
+    )
+
     name = models.CharField(
         max_length=200,
         verbose_name=_("Product Name"),
