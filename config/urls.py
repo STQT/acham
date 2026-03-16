@@ -10,6 +10,7 @@ from drf_spectacular.views import SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 from acham.orders.api.payment_views import payment_notify
 from acham.banner.views import AboutPageView
+from acham.sitemap import sitemap_xml
 
 from config.error_handlers import handler400
 from config.error_handlers import handler403
@@ -18,6 +19,7 @@ from config.error_handlers import handler500
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
+    path("sitemap.xml", sitemap_xml, name="sitemap-xml"),
     path(
         "about/",
         AboutPageView.as_view(),
