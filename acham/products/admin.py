@@ -6,7 +6,7 @@ from slugify import slugify
 from .models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem, Collection, ProductRelation
 
 
-class ProductShotInline(admin.TabularInline):
+class ProductShotInline(admin.StackedInline):
     """Inline admin for ProductShot."""
     model = ProductShot
     extra = 1
@@ -79,7 +79,7 @@ class ProductAdmin(TranslationAdmin):
 
     def _ensure_slugs(self, obj: Product) -> None:
         specs: tuple[tuple[str, tuple[str, ...]], ...] = (
-            ("slug_en", ("name", "color")),
+            ("slug_en", ("name_en", "color_en")),
             ("slug_ru", ("name_ru", "color_ru")),
             ("slug_uz", ("name_uz", "color_uz")),
         )
@@ -309,7 +309,7 @@ class ProductShareAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related('product', 'user')
 
 
-class CartItemInline(admin.TabularInline):
+class CartItemInline(admin.StackedInline):
     """Inline admin for CartItem."""
     model = CartItem
     extra = 0

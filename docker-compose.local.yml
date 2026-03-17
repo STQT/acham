@@ -2,6 +2,7 @@ volumes:
   acham_local_postgres_data: {}
   acham_local_postgres_data_backups: {}
   acham_local_redis_data: {}
+  acham_local_venv: {}
 
 services:
   django: &django
@@ -14,7 +15,7 @@ services:
       - postgres
       # - redis
     volumes:
-      - /app/.venv
+      - acham_local_venv:/app/.venv
       - .:/app:z
     env_file:
       - ./.envs/.local/.django

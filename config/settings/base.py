@@ -18,6 +18,8 @@ env = environ.Env()
     # OS environment variables take precedence over variables from .env
 env.read_env(str(BASE_DIR / ".env"))
 
+R2_ENABLED = env.bool("R2_ENABLED", default=False)
+
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
@@ -110,6 +112,8 @@ LOCAL_APPS = [
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = ["jazzmin", "modeltranslation"] + DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+if R2_ENABLED:
+    INSTALLED_APPS += ["storages"]
 
 MODELTRANSLATION_DEFAULT_LANGUAGE = "ru"
 MODELTRANSLATION_LANGUAGES = ("ru", "en", "uz")
@@ -186,12 +190,54 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 # MEDIA
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-root
 MEDIA_ROOT = str(APPS_DIR / "media")
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
 MEDIA_URL = "/media/"
+
+if R2_ENABLED:
+    AWS_ACCESS_KEY_ID = env("R2_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = env("R2_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = env("R2_BUCKET_NAME")
+    # Must be account endpoint (no /<bucket> suffix), e.g.
+    # https://<accountid>.r2.cloudflarestorage.com
+    AWS_S3_ENDPOINT_URL = (env("R2_ENDPOINT_URL") or "").rstrip("/")
+    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="auto")
+
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = env.bool("AWS_QUERYSTRING_AUTH", default=False)
+    AWS_S3_SIGNATURE_VERSION = env("AWS_S3_SIGNATURE_VERSION", default="s3v4")
+    AWS_S3_ADDRESSING_STYLE = env("AWS_S3_ADDRESSING_STYLE", default="path")
+
+    # Where files will be stored inside the bucket
+    AWS_LOCATION = env("R2_MEDIA_LOCATION", default="media").strip("/")
+
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "location": AWS_LOCATION,
+        },
+    }
+
+    # If you have a public/custom domain (recommended), expose it here
+    R2_PUBLIC_BASE_URL = (env("R2_PUBLIC_BASE_URL", default="") or "").rstrip("/")
+    if R2_PUBLIC_BASE_URL:
+        # Ensure generated file URLs point to the public base URL.
+        # django-storages uses AWS_S3_CUSTOM_DOMAIN for .url generation.
+        AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
+        AWS_S3_CUSTOM_DOMAIN = R2_PUBLIC_BASE_URL.removeprefix("https://").removeprefix("http://")
+        MEDIA_URL = f"{R2_PUBLIC_BASE_URL}/{AWS_LOCATION}/"
 
 # TEMPLATES
 # ------------------------------------------------------------------------------

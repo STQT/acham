@@ -17,3 +17,15 @@ OCTO_TEST_MODE=true
 
 # Frontend URL
 FRONTEND_URL=http://localhost:4200
+
+
+# Cloudflare R2 (S3-compatible)
+R2_ENABLED=true
+R2_ACCESS_KEY_ID=56edcbe50191a88925e0ab31e1cf7f78
+R2_SECRET_ACCESS_KEY=a8e8e1aa34af8b9076512700472e172b2ffb6a6fe4e9b2049975bedb416914ea
+R2_BUCKET_NAME=acham-media
+# Example: https://<accountid>.r2.cloudflarestorage.com
+R2_ENDPOINT_URL=https://51277c53685910e97791dc71878fbeaa.r2.cloudflarestorage.com
+# Optional: if you expose bucket via a public domain (bucket root URL)
+R2_PUBLIC_BASE_URL=https://pub-fbb38dc7cdb8425caa7283fa627a4ca6.r2.dev
+R2_MEDIA_LOCATION=media

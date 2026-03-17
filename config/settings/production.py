@@ -71,16 +71,9 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
     default=True,
 )
 
-# STATIC & MEDIA
-# ------------------------
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+ # STATIC & MEDIA
+ # ------------------------
+ # Storage configuration lives in config/settings/base.py
 
 # EMAIL
 # ------------------------------------------------------------------------------
