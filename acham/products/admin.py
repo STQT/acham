@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from modeltranslation.admin import TranslationAdmin
+from slugify import slugify
+
 from .models import Product, ProductShot, UserFavorite, ProductShare, Cart, CartItem, Collection, ProductRelation
 
 
@@ -70,6 +72,65 @@ class ProductAdmin(TranslationAdmin):
         'slug_en': ('name', 'color'),
         'slug_uz': ('name_uz', 'color_uz'),
     }
+
+    def save_model(self, request, obj, form, change):  # noqa: ARG002
+        self._ensure_slugs(obj)
+        super().save_model(request, obj, form, change)
+
+    def _ensure_slugs(self, obj: Product) -> None:
+        specs: tuple[tuple[str, tuple[str, ...]], ...] = (
+            ("slug_en", ("name", "color")),
+            ("slug_ru", ("name_ru", "color_ru")),
+            ("slug_uz", ("name_uz", "color_uz")),
+        )
+
+        for slug_field, sources in specs:
+            current = (getattr(obj, slug_field, None) or "").strip()
+            if current:
+                continue
+
+            base = self._build_slug_base(obj, sources)
+            max_length = Product._meta.get_field(slug_field).max_length or 200
+            unique = self._make_unique_slug(obj, slug_field, base, max_length=max_length)
+            setattr(obj, slug_field, unique)
+
+    def _build_slug_base(self, obj: Product, sources: tuple[str, ...]) -> str:
+        parts: list[str] = []
+        for field_name in sources:
+            value = getattr(obj, field_name, None)
+            if value is None:
+                continue
+            value_str = str(value).strip()
+            if value_str:
+                parts.append(value_str)
+
+        joined = " ".join(parts).strip()
+        if not joined:
+            joined = f"product-{obj.pk or 'new'}"
+        return slugify(joined)
+
+    def _make_unique_slug(self, obj: Product, slug_field: str, base: str, *, max_length: int) -> str:
+        base = (base or "").strip("-").strip() or "product"
+        base = base[:max_length]
+
+        qs = Product.objects.all()
+        if obj.pk:
+            qs = qs.exclude(pk=obj.pk)
+        used = set(qs.values_list(slug_field, flat=True))
+
+        if base and base not in used:
+            return base
+
+        n = 2
+        while True:
+            suffix = f"-{n}"
+            trimmed = base
+            if len(trimmed) + len(suffix) > max_length:
+                trimmed = trimmed[: max(1, max_length - len(suffix))].rstrip("-")
+            candidate = f"{trimmed}{suffix}"[:max_length]
+            if candidate not in used:
+                return candidate
+            n += 1
     
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object
