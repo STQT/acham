@@ -66,9 +66,9 @@ class ProductAdmin(TranslationAdmin):
     readonly_fields = ['created_at', 'updated_at']
 
     prepopulated_fields = {
-        'slug_ru': ('name_ru',),
-        'slug_en': ('name',),
-        'slug_uz': ('name_uz',),
+        'slug_ru': ('name_ru', 'color_ru'),
+        'slug_en': ('name', 'color'),
+        'slug_uz': ('name_uz', 'color_uz'),
     }
     
     def get_readonly_fields(self, request, obj=None):
