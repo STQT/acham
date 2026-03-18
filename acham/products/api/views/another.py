@@ -1,5 +1,6 @@
 from rest_framework import generics, filters, status
 from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Q
@@ -726,6 +727,7 @@ class CartDetailView(generics.RetrieveAPIView):
     Get user's cart with all items.
     """
     serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_object(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -747,6 +749,7 @@ class CartSummaryView(generics.RetrieveAPIView):
     Get cart summary (total items, price, etc.).
     """
     serializer_class = CartSummarySerializer
+    permission_classes = [IsAuthenticated]
     
     def get_object(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -763,6 +766,7 @@ class CartItemListCreateView(generics.ListCreateAPIView):
     List cart items or add item to cart.
     """
     serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -778,6 +782,7 @@ class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     Retrieve, update, or remove cart item.
     """
     serializer_class = CartItemSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
@@ -812,6 +817,9 @@ def add_to_cart(request, product_id):
     quantity = request.data.get('quantity', 1)
     if quantity <= 0:
         return Response({'error': 'Quantity must be greater than zero'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
     
     cart, created = Cart.objects.get_or_create(user=request.user)
     
@@ -848,6 +856,9 @@ def remove_from_cart(request, product_id):
         product = Product.objects.get(id=product_id)
     except Product.DoesNotExist:
         return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
     
     try:
         cart = Cart.objects.get(user=request.user)
@@ -884,6 +895,9 @@ def update_cart_item_quantity(request, product_id):
     quantity = request.data.get('quantity')
     if quantity is None or quantity <= 0:
         return Response({'error': 'Valid quantity is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
     
     try:
         cart = Cart.objects.get(user=request.user)
@@ -914,6 +928,9 @@ def clear_cart(request):
     """
     Remove all items from cart.
     """
+    if not request.user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+
     try:
         cart = Cart.objects.get(user=request.user)
         cart.items.all().delete()
