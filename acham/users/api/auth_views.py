@@ -218,7 +218,7 @@ class SocialOAuthAuthorizeView(SocialOAuthBaseView):
         if not redirect_uri:
             return Response({"detail": _("redirect_uri is required.")}, status=status.HTTP_400_BAD_REQUEST)
 
-        client_id, _ = self.get_client_credentials()
+        client_id, _client_secret_unused = self.get_client_credentials()
         if not client_id:
             return Response({"detail": _("OAuth client_id is not configured.")}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -266,7 +266,7 @@ class SocialOAuthCallbackView(SocialOAuthBaseView):
         email = profile.get("email")
         name = profile.get("name") or profile.get("given_name")
 
-        user, _ = self._create_or_update_user(
+        user, _social_account = self._create_or_update_user(
             uid=str(uid),
             email=email,
             name=name,
