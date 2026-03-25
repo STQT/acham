@@ -2,12 +2,13 @@ from rest_framework import generics, filters, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 
 from ...models import Product, Collection
 from ..serializers import (
     ProductListSerializer,
-    CollectionSerializer
+    CollectionSerializer,
+    CollectionWithProductsSerializer,
 )
 
 
@@ -66,6 +67,42 @@ class CollectionDetailView(generics.RetrieveAPIView):
     """
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
+
+
+@extend_schema(
+    tags=["Collections"],
+    summary="Get collection details by slug",
+    description="Retrieve collection details (with products) using a multilingual slug. "
+                "Slug is resolved based on the current language (en/ru/uz).",
+    responses={200: CollectionWithProductsSerializer}
+)
+class CollectionSlugDetailView(generics.RetrieveAPIView):
+    """
+    Retrieve a collection by its multilingual slug (with products).
+    """
+    serializer_class = CollectionWithProductsSerializer
+
+    def get_queryset(self):
+        products_qs = (
+            Product.objects.filter(is_available=True)
+            .select_related('collection')
+            .prefetch_related('shots')
+            .order_by('-created_at')
+        )
+        return Collection.objects.all().prefetch_related(Prefetch('products', queryset=products_qs))
+
+    def get_object(self):
+        slug = self.kwargs.get("slug")
+        language = getattr(self.request, "LANGUAGE_CODE", "en")
+        lang_to_field = {
+            "en": "slug_en",
+            "ru": "slug_ru",
+            "uz": "slug_uz",
+        }
+        slug_field = lang_to_field.get(language, "slug_en")
+        filter_kwargs = {slug_field: slug}
+        from django.shortcuts import get_object_or_404
+        return get_object_or_404(self.get_queryset(), **filter_kwargs)
 
 
 class CollectionProductsView(generics.ListAPIView):

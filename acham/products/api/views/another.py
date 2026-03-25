@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404
 
 from acham.products.models import Product, ProductShot, Collection, UserFavorite, ProductShare, Cart, CartItem, ProductRelation
@@ -12,6 +12,7 @@ from acham.products.api.serializers import (
     ProductListSerializer,
     ProductShotSerializer,
     CollectionSerializer,
+    CollectionWithProductsSerializer,
     ChoiceItemSerializer,
     ProductCompleteDetailsSerializer,
     UserFavoriteSerializer,
@@ -368,14 +369,25 @@ class CollectionDetailView(generics.RetrieveAPIView):
     summary="Get collection details by slug",
     description="Retrieve collection details using a multilingual slug. "
                 "Slug is resolved based on the current language (en/ru/uz).",
-    responses={200: CollectionSerializer}
+    responses={200: CollectionWithProductsSerializer}
 )
 class CollectionSlugDetailView(generics.RetrieveAPIView):
     """
     Retrieve a collection by its multilingual slug.
     """
-    queryset = Collection.objects.all()
-    serializer_class = CollectionSerializer
+    serializer_class = CollectionWithProductsSerializer
+
+    def get_queryset(self):
+        # Prefetch available products (and their shots) to avoid N+1 when embedding products
+        products_qs = (
+            Product.objects.filter(is_available=True)
+            .select_related('collection')
+            .prefetch_related('shots')
+            .order_by('-created_at')
+        )
+        return Collection.objects.all().prefetch_related(
+            Prefetch('products', queryset=products_qs)
+        )
 
     def get_object(self):
         slug = self.kwargs.get("slug")

@@ -246,7 +246,12 @@ class ProductListSerializer(serializers.ModelSerializer):
     
     def get_primary_image(self, obj) -> str | None:
         """Get the primary image URL for the product."""
-        primary_shot = obj.shots.filter(is_primary=True).first()
+        # Avoid per-object DB hits when shots are prefetched
+        prefetched = getattr(obj, "_prefetched_objects_cache", {})
+        if prefetched and "shots" in prefetched:
+            primary_shot = next((s for s in prefetched["shots"] if getattr(s, "is_primary", False)), None)
+        else:
+            primary_shot = obj.shots.filter(is_primary=True).first()
         if primary_shot:
             request = self.context.get('request')
             if request:
@@ -509,3 +514,15 @@ class ProductCompleteDetailsSerializer(serializers.Serializer):
     product = ProductSerializer()
     shots = ProductShotSerializer(many=True)
     metadata = serializers.DictField()
+
+
+class CollectionWithProductsSerializer(CollectionSerializer):
+    """
+    Collection serializer for detail endpoints that must include products.
+    Keeps CollectionList endpoints small while allowing Collection detail/by-slug to embed products.
+    """
+
+    products = ProductListSerializer(many=True, read_only=True)
+
+    class Meta(CollectionSerializer.Meta):
+        fields = CollectionSerializer.Meta.fields + ['products']
