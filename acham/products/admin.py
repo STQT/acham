@@ -10,8 +10,25 @@ class ProductShotInline(admin.StackedInline):
     """Inline admin for ProductShot."""
     model = ProductShot
     extra = 1
-    fields = ['image', 'alt_text', 'is_primary', 'order']
+    fields = ['image', 'image_preview', 'alt_text', 'is_primary', 'order']
     ordering = ['order']
+    readonly_fields = ['image_preview']
+
+    def image_preview(self, obj):
+        """Display image preview in Product inline."""
+        if obj and getattr(obj, "image", None):
+            try:
+                url = obj.image.url
+            except Exception:  # noqa: BLE001
+                url = None
+            if url:
+                return format_html(
+                    '<img src="{}" width="160" height="160" style="object-fit: cover; border-radius: 6px;" />',
+                    url,
+                )
+        return "—"
+
+    image_preview.short_description = "Preview"
 
 
 @admin.register(Product)
