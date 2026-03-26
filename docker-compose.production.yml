@@ -27,7 +27,7 @@ services:
       - ./.envs/.production/.postgres
     command: /start
     ports:
-      - '8030:5000'
+      - '127.0.0.1:8030:5000'
 
   postgres:
     build:
@@ -78,7 +78,7 @@ services:
     image: acham_production_flower
     command: /start-flower
     ports:
-      - '8032:5555'
+      - '127.0.0.1:8032:5555'
 
   nginx:
     build:
@@ -91,4 +91,4 @@ services:
       - production_django_media:/usr/share/nginx/media:ro
       - production_django_static:/usr/share/nginx/static:ro
     ports:
-      - '8031:80'
+      - '127.0.0.1:8031:80'
