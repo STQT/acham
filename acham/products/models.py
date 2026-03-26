@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
@@ -297,13 +297,22 @@ class ProductShot(models.Model):
         if self.image and getattr(self.image, "_file", None):
             optimize_image(self.image, force=False)
 
-        # Ensure only one primary image per product
-        if self.is_primary:
-            ProductShot.objects.filter(
-                product=self.product,
-                is_primary=True
-            ).exclude(id=self.id).update(is_primary=False)
-        super().save(*args, **kwargs)
+        update_fields = kwargs.get("update_fields")
+        enforce_primary = bool(self.is_primary) and (
+            update_fields is None or "is_primary" in set(update_fields)
+        )
+
+        # Ensure only one primary image per product.
+        # Important: skip this when doing image-only saves (e.g. batch optimization),
+        # otherwise "is_primary" on other shots can change unexpectedly.
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            if enforce_primary:
+                (
+                    ProductShot.objects.filter(product=self.product, is_primary=True)
+                    .exclude(pk=self.pk)
+                    .update(is_primary=False)
+                )
 
 
 class UserFavorite(models.Model):
